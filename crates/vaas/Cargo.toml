@@ -1,22 +1,26 @@
 [package]
 name = "wormhole-vaas"
-version = "0.1.0"
-edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [dependencies]
 alloy-primitives.workspace = true
 hex-literal.workspace = true
 
+# anchor
 anchor-lang = { workspace = true, optional = true }
-serde = { version = "1.0.171", optional = true, features = ["derive"] }
-schemars = { version = "0.8.12", optional = true }
+
+serde = {workspace = true, optional = true, features = ["derive"]}
+serde_json = { workspace = true, optional = true }
 
 [dev-dependencies]
-serde_json = "1.0.103"
 
 [features]
 default = []
 anchor = ["anchor-lang"]
-serde = ["dep:serde", "alloy-primitives/serde"]
+serde = ["dep:serde", "dep:serde_json", "alloy-primitives/serde"]

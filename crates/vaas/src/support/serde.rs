@@ -67,6 +67,7 @@ pub(crate) mod fixed_bytes_as_array {
 
 #[cfg(test)]
 mod test {
+    use crate::PayloadKind;
     use crate::Vaa;
 
     #[test]
@@ -86,10 +87,11 @@ mod test {
                 "emitterAddress": "0xc69a1b1a65dd336bf1df6a77afb501fc25db7fc0938cb08595a9ef473265cb4f",
                 "sequence": "3",
                 "consistencyLevel": 32,
-                "serializedPayload": "00"
+                "payload": [0, 1, 2]
         });
         let vaa: Vaa = serde_json::from_value(json).unwrap();
 
         assert_eq!(vaa.header.version, 1);
+        assert_eq!(vaa.body.payload, PayloadKind::Binary(vec![0, 1, 2]))
     }
 }
