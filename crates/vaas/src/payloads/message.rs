@@ -15,6 +15,8 @@ pub struct Message {
 }
 
 impl Readable for Message {
+    const SIZE: Option<usize> = None;
+
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         R: io::Read,
@@ -61,5 +63,9 @@ impl Writeable for Message {
         (self.message.len() as u16).write(writer)?;
         writer.write_all(&self.message)?;
         Ok(())
+    }
+
+    fn written_size(&self) -> usize {
+        1 + 8 + 2 + 2 + self.sender.len() + 2 + self.target.len() + 2 + self.message.len()
     }
 }

@@ -17,6 +17,8 @@ pub struct TransferWithMessage {
 }
 
 impl Readable for TransferWithMessage {
+    const SIZE: Option<usize> = None;
+
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -40,6 +42,10 @@ impl Readable for TransferWithMessage {
 }
 
 impl Writeable for TransferWithMessage {
+    fn written_size(&self) -> usize {
+        1 + 32 + 32 + 2 + 32 + 2 + 32 + self.payload.len()
+    }
+
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         Self: Sized,

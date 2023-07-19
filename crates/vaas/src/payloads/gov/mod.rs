@@ -23,6 +23,8 @@ pub struct GovernanceHeader {
 }
 
 impl Readable for GovernanceHeader {
+    const SIZE: Option<usize> = Some(32 + 1 + 2);
+
     fn read<R>(reader: &mut R) -> std::io::Result<Self>
     where
         R: std::io::Read,
@@ -45,6 +47,10 @@ impl Writeable for GovernanceHeader {
         self.target.write(writer)?;
         Ok(())
     }
+
+    fn written_size(&self) -> usize {
+        <Self as Readable>::SIZE.unwrap()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -54,6 +60,8 @@ pub struct GovernanceMessage {
 }
 
 impl Readable for GovernanceMessage {
+    const SIZE: Option<usize> = None;
+
     fn read<R>(reader: &mut R) -> std::io::Result<Self>
     where
         R: std::io::Read,
@@ -77,6 +85,10 @@ impl Writeable for GovernanceMessage {
         self.header.write(writer)?;
         writer.write_all(&self.decree)?;
         Ok(())
+    }
+
+    fn written_size(&self) -> usize {
+        self.header.written_size() + self.decree.len()
     }
 }
 

@@ -18,6 +18,8 @@ pub struct Vaa {
 }
 
 impl Readable for Vaa {
+    const SIZE: Option<usize> = None;
+
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -51,9 +53,15 @@ impl Writeable for VaaHeader {
             .try_for_each(|sig| sig.write(writer))?;
         Ok(())
     }
+
+    fn written_size(&self) -> usize {
+        1 + 4 + (self.signatures.len() * <GuardianSetSig as Readable>::SIZE.unwrap())
+    }
 }
 
 impl Readable for VaaHeader {
+    const SIZE: Option<usize> = None;
+
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         R: io::Read,
@@ -93,6 +101,10 @@ pub struct VaaBody {
 }
 
 impl Writeable for VaaBody {
+    fn written_size(&self) -> usize {
+        4 + 4 + 2 + 32 + 8 + 1 + self.payload.written_size()
+    }
+
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -109,6 +121,8 @@ impl Writeable for VaaBody {
 }
 
 impl Readable for VaaBody {
+    const SIZE: Option<usize> = None;
+
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         R: io::Read,
@@ -136,11 +150,9 @@ impl VaaBody {
 
     pub fn read_payload<P: Payload>(&self) -> Option<P> {
         let payload_bytes = self.payload_bytes()?;
-
         let deser = P::read(&mut payload_bytes.as_ref()).ok()?;
-        let mut reser = Vec::with_capacity(payload_bytes.len());
-        P::write(&deser, &mut reser).expect("no alloc issue");
-        (reser == payload_bytes).then_some(deser)
+
+        (deser.written_size() == payload_bytes.len()).then_some(deser)
     }
 
     pub fn payload_as_message(&self) -> Option<payloads::Message> {

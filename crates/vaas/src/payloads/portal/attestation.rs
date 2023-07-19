@@ -38,6 +38,8 @@ impl Attestation {
 }
 
 impl Readable for Attestation {
+    const SIZE: Option<usize> = Some(1 + 32 + 2 + 1 + 32 + 32);
+
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -55,6 +57,10 @@ impl Readable for Attestation {
 }
 
 impl Writeable for Attestation {
+    fn written_size(&self) -> usize {
+        <Self as Readable>::SIZE.unwrap()
+    }
+
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         Self: Sized,

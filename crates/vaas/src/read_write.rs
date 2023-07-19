@@ -3,6 +3,8 @@ use std::io;
 use alloy_primitives::{FixedBytes, Uint};
 
 pub trait Readable {
+    const SIZE: Option<usize>;
+
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -14,14 +16,18 @@ pub trait Writeable {
     where
         W: io::Write;
 
+    fn written_size(&self) -> usize;
+
     fn to_vec(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
+        let mut buf = Vec::with_capacity(self.written_size());
         self.write(&mut buf).expect("no alloc failure");
         buf
     }
 }
 
 impl Readable for u8 {
+    const SIZE: Option<usize> = Some(1);
+
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         R: io::Read,
@@ -33,6 +39,10 @@ impl Readable for u8 {
 }
 
 impl Writeable for u8 {
+    fn written_size(&self) -> usize {
+        <Self as Readable>::SIZE.unwrap()
+    }
+
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -50,9 +60,15 @@ impl Readable for u16 {
         reader.read_exact(&mut buf)?;
         Ok(u16::from_be_bytes(buf))
     }
+
+    const SIZE: Option<usize> = Some(2);
 }
 
 impl Writeable for u16 {
+    fn written_size(&self) -> usize {
+        <Self as Readable>::SIZE.unwrap()
+    }
+
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -62,6 +78,8 @@ impl Writeable for u16 {
 }
 
 impl Readable for u32 {
+    const SIZE: Option<usize> = Some(4);
+
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         R: io::Read,
@@ -73,6 +91,9 @@ impl Readable for u32 {
 }
 
 impl Writeable for u32 {
+    fn written_size(&self) -> usize {
+        <Self as Readable>::SIZE.unwrap()
+    }
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -82,6 +103,8 @@ impl Writeable for u32 {
 }
 
 impl Readable for u64 {
+    const SIZE: Option<usize> = Some(8);
+
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         R: io::Read,
@@ -93,6 +116,9 @@ impl Readable for u64 {
 }
 
 impl Writeable for u64 {
+    fn written_size(&self) -> usize {
+        <Self as Readable>::SIZE.unwrap()
+    }
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -102,6 +128,8 @@ impl Writeable for u64 {
 }
 
 impl<const N: usize> Readable for [u8; N] {
+    const SIZE: Option<usize> = Some(N);
+
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -114,6 +142,10 @@ impl<const N: usize> Readable for [u8; N] {
 }
 
 impl<const N: usize> Writeable for [u8; N] {
+    fn written_size(&self) -> usize {
+        <Self as Readable>::SIZE.unwrap()
+    }
+
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -123,6 +155,8 @@ impl<const N: usize> Writeable for [u8; N] {
 }
 
 impl<const N: usize> Readable for FixedBytes<N> {
+    const SIZE: Option<usize> = Some(N);
+
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -133,6 +167,10 @@ impl<const N: usize> Readable for FixedBytes<N> {
 }
 
 impl<const N: usize> Writeable for FixedBytes<N> {
+    fn written_size(&self) -> usize {
+        <Self as Readable>::SIZE.unwrap()
+    }
+
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -142,6 +180,8 @@ impl<const N: usize> Writeable for FixedBytes<N> {
 }
 
 impl<const BITS: usize, const LIMBS: usize> Readable for Uint<BITS, LIMBS> {
+    const SIZE: Option<usize> = { Some(BITS * 8) };
+
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -155,6 +195,10 @@ impl<const BITS: usize, const LIMBS: usize> Readable for Uint<BITS, LIMBS> {
 }
 
 impl<const BITS: usize, const LIMBS: usize> Writeable for Uint<BITS, LIMBS> {
+    fn written_size(&self) -> usize {
+        <Self as Readable>::SIZE.unwrap()
+    }
+
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
