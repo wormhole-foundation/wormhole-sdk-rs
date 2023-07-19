@@ -1,0 +1,21 @@
+[workspace]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.package]
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.65"
+authors = ["Wormhole Contributors"]
+license = "MIT OR Apache-2.0"
+homepage = "https://github.com/TODO"
+repository = "https://github.com/TODO"
+
+[workspace.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[workspace.dependencies]
+alloy-primitives = "0.2.0"
+hex-literal = "0.4.1"
+anchor-lang = "0.28.0"
