@@ -85,21 +85,15 @@ pub struct VaaBody {
     pub emitter_address: FixedBytes<32>,
     pub sequence: U64,
     pub consistency_level: u8,
-    #[cfg_attr(feature = "serde", serde(rename = "serializedPayload"))]
-    pub payload: alloy_primitives::Bytes,
+
+    #[cfg_attr(feature = "serde", serde(rename = "serializedPayload", default))]
+    pub payload_bytes: alloy_primitives::Bytes,
+
+    #[cfg(feature = "serde")]
+    #[serde(default = "empty_obj")]
+    pub payload: serde_json::Value,
 }
 
-impl VaaBody {
-    #[inline]
-    pub fn digest(&self) -> FixedBytes<32> {
-        utils::keccak256(self.to_vec())
-    }
-
-    #[inline]
-    pub fn double_digest(&self) -> FixedBytes<32> {
-        utils::keccak256(self.digest())
-    }
-}
 
 impl Writeable for VaaBody {
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
@@ -112,9 +106,14 @@ impl Writeable for VaaBody {
         self.emitter_address.write(writer)?;
         self.sequence.into_limbs()[0].write(writer)?;
         self.consistency_level.write(writer)?;
-        writer.write_all(&self.payload)?;
+        writer.write_all(&self.payload_bytes)?;
         Ok(())
     }
+}
+
+#[cfg(feature = "serde")]
+fn empty_obj() -> serde_json::Value {
+    serde_json::Value::Object(Default::default())
 }
 
 impl Readable for VaaBody {
@@ -129,26 +128,43 @@ impl Readable for VaaBody {
             emitter_address: <FixedBytes<32>>::read(reader)?,
             sequence: U64::from_limbs([u64::read(reader)?]),
             consistency_level: u8::read(reader)?,
-            payload: {
+            payload_bytes: {
                 let mut buf = Vec::new();
                 reader.read_to_end(&mut buf)?;
                 buf.into()
             },
+            #[cfg(feature = "serde")]
+            payload: empty_obj(),
         })
     }
 }
 
 impl VaaBody {
     pub fn read_payload<P: Payload>(&self) -> Option<P> {
-        let deser = P::read(&mut self.payload.as_ref()).ok()?;
+        let deser = P::read(&mut self.payload_bytes.as_ref()).ok()?;
 
-        let mut reser = Vec::with_capacity(self.payload.len());
+        let mut reser = Vec::with_capacity(self.payload_bytes.len());
         P::write(&deser, &mut reser).expect("no alloc issue");
 
-        (reser == self.payload).then_some(deser)
+        (reser == self.payload_bytes).then_some(deser)
     }
 
     pub fn payload_as_message(&self) -> Option<payloads::Message> {
         self.read_payload()
+    }
+
+    #[inline]
+    pub fn digest(&self) -> FixedBytes<32> {
+        utils::keccak256(self.to_vec())
+    }
+
+    #[inline]
+    pub fn double_digest(&self) -> FixedBytes<32> {
+        utils::keccak256(self.digest())
+    }
+
+    #[cfg(feature = "serde")]
+    pub fn deser_payload<P: Payload + serde::de::DeserializeOwned>(&self) -> Result<P, serde_json::Error> {
+        serde_json::from_value(self.payload.clone())
     }
 }
