@@ -1,6 +1,9 @@
 use alloy_primitives::{FixedBytes, U64};
 
-use crate::{payloads, utils, Payload};
+use crate::{
+    payloads::{self, PayloadKind},
+    utils, Payload,
+};
 pub use crate::{GuardianSetSig, Readable, Writeable};
 
 use std::io;
@@ -86,14 +89,8 @@ pub struct VaaBody {
     pub sequence: U64,
     pub consistency_level: u8,
 
-    #[cfg_attr(feature = "serde", serde(rename = "serializedPayload", default))]
-    pub payload_bytes: alloy_primitives::Bytes,
-
-    #[cfg(feature = "serde")]
-    #[serde(default = "empty_obj")]
-    pub payload: serde_json::Value,
+    pub payload: PayloadKind,
 }
-
 
 impl Writeable for VaaBody {
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
@@ -106,14 +103,9 @@ impl Writeable for VaaBody {
         self.emitter_address.write(writer)?;
         self.sequence.into_limbs()[0].write(writer)?;
         self.consistency_level.write(writer)?;
-        writer.write_all(&self.payload_bytes)?;
+        self.payload.write(writer)?;
         Ok(())
     }
-}
-
-#[cfg(feature = "serde")]
-fn empty_obj() -> serde_json::Value {
-    serde_json::Value::Object(Default::default())
 }
 
 impl Readable for VaaBody {
@@ -122,31 +114,33 @@ impl Readable for VaaBody {
         R: io::Read,
     {
         Ok(Self {
-            timestamp: u32::read(reader)?,
-            nonce: u32::read(reader)?,
-            emitter_chain: u16::read(reader)?,
-            emitter_address: <FixedBytes<32>>::read(reader)?,
-            sequence: U64::from_limbs([u64::read(reader)?]),
-            consistency_level: u8::read(reader)?,
-            payload_bytes: {
-                let mut buf = Vec::new();
-                reader.read_to_end(&mut buf)?;
-                buf.into()
-            },
-            #[cfg(feature = "serde")]
-            payload: empty_obj(),
+            timestamp: Readable::read(reader)?,
+            nonce: Readable::read(reader)?,
+            emitter_chain: Readable::read(reader)?,
+            emitter_address: Readable::read(reader)?,
+            sequence: U64::from_limbs([Readable::read(reader)?]),
+            consistency_level: Readable::read(reader)?,
+            payload: Readable::read(reader)?,
         })
     }
 }
 
 impl VaaBody {
+    #[allow(unreachable_patterns)]
+    pub fn payload_bytes(&self) -> Option<&[u8]> {
+        match &self.payload {
+            PayloadKind::Binary(buf) => Some(&buf),
+            _ => None,
+        }
+    }
+
     pub fn read_payload<P: Payload>(&self) -> Option<P> {
-        let deser = P::read(&mut self.payload_bytes.as_ref()).ok()?;
+        let payload_bytes = self.payload_bytes()?;
 
-        let mut reser = Vec::with_capacity(self.payload_bytes.len());
+        let deser = P::read(&mut payload_bytes.as_ref()).ok()?;
+        let mut reser = Vec::with_capacity(payload_bytes.len());
         P::write(&deser, &mut reser).expect("no alloc issue");
-
-        (reser == self.payload_bytes).then_some(deser)
+        (reser == payload_bytes).then_some(deser)
     }
 
     pub fn payload_as_message(&self) -> Option<payloads::Message> {
@@ -164,7 +158,10 @@ impl VaaBody {
     }
 
     #[cfg(feature = "serde")]
-    pub fn deser_payload<P: Payload + serde::de::DeserializeOwned>(&self) -> Result<P, serde_json::Error> {
-        serde_json::from_value(self.payload.clone())
+    pub fn deser_payload<P: Payload + serde::de::DeserializeOwned>(&self) -> Option<P> {
+        match &self.payload {
+            PayloadKind::Json(value) => serde_json::from_value(value.clone()).ok(),
+            _ => None,
+        }
     }
 }

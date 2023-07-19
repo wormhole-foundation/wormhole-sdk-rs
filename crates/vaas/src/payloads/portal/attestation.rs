@@ -96,7 +96,7 @@ mod test {
         assert_eq!(vaa.body.consistency_level, 32);
 
         let attestation = vaa.body.read_payload::<Attestation>().unwrap();
-        assert_eq!(attestation.to_vec(), vaa.body.payload_bytes);
+        assert_eq!(attestation.to_vec(), vaa.body.payload_bytes().unwrap());
 
         assert_eq!(
             attestation.token_address,
