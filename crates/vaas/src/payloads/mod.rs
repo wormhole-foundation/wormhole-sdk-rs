@@ -23,6 +23,8 @@ pub enum PayloadKind {
 }
 
 impl Readable for PayloadKind {
+    const SIZE: Option<usize> = None;
+
     fn read<R>(reader: &mut R) -> std::io::Result<Self>
     where
         Self: Sized,
@@ -35,6 +37,14 @@ impl Readable for PayloadKind {
 }
 
 impl Writeable for PayloadKind {
+    fn written_size(&self) -> usize {
+        #[allow(unreachable_patterns)]
+        match self {
+            PayloadKind::Binary(buf) => buf.len(),
+            _ => 0,
+        }
+    }
+
     fn write<W>(&self, writer: &mut W) -> std::io::Result<()>
     where
         W: std::io::Write,

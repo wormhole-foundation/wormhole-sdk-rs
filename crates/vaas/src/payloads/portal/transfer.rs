@@ -16,6 +16,7 @@ pub struct Transfer {
 }
 
 impl Readable for Transfer {
+    const SIZE: Option<usize> = Some(1 + 32 + 32 + 2 + 32 + 2 + 32);
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -47,6 +48,10 @@ impl Writeable for Transfer {
         self.to_chain.write(writer)?;
         self.fee.write(writer)?;
         Ok(())
+    }
+
+    fn written_size(&self) -> usize {
+        <Self as Readable>::SIZE.unwrap()
     }
 }
 

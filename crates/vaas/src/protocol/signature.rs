@@ -25,6 +25,8 @@ impl GuardianSetSig {
 }
 
 impl Readable for GuardianSetSig {
+    const SIZE: Option<usize> = Some(66);
+
     fn read<R>(reader: &mut R) -> std::io::Result<Self>
     where
         Self: Sized,
@@ -48,5 +50,9 @@ impl Writeable for GuardianSetSig {
         writer.write_all(&[self.guardian_set_index])?;
         self.signature.write(writer)?;
         Ok(())
+    }
+
+    fn written_size(&self) -> usize {
+        <Self as Readable>::SIZE.unwrap()
     }
 }
