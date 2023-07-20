@@ -58,7 +58,7 @@ impl Writeable for Transfer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{payloads::portal::Transfer, Vaa};
+    use crate::{payloads::token_bridge::Transfer, Vaa};
     use alloy_primitives::{U256, U64};
     use hex_literal::hex;
 
