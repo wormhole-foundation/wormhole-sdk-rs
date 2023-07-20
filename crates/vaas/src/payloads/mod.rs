@@ -4,7 +4,7 @@ pub use message::Message;
 use crate::{Readable, Writeable};
 
 pub mod gov;
-pub mod portal;
+pub mod token_bridge;
 
 /// Trait to capture common payload behavior.
 pub trait Payload: crate::Readable + crate::Writeable + Clone + std::fmt::Debug {}

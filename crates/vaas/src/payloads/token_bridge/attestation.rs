@@ -81,7 +81,7 @@ mod test {
     use alloy_primitives::{FixedBytes, U64};
     use hex_literal::hex;
 
-    use crate::{payloads::portal::Attestation, Readable, Vaa, Writeable};
+    use crate::{payloads::token_bridge::Attestation, Readable, Vaa, Writeable};
 
     #[test]
     fn parse_token_bridge_attestation() {
