@@ -1,5 +1,6 @@
 [package]
 name = "wormhole-vaas"
+description = "Serialization/deserialization of Wormhole VAAs"
 
 version.workspace = true
 edition.workspace = true
