@@ -143,13 +143,14 @@ impl VaaBody {
     #[allow(unreachable_patterns)]
     pub fn payload_bytes(&self) -> Option<&[u8]> {
         match &self.payload {
-            PayloadKind::Binary(buf) => Some(&buf),
+            PayloadKind::Binary(buf) => Some(buf),
             _ => None,
         }
     }
 
     pub fn read_payload<P: Payload>(&self) -> Option<P> {
         let payload_bytes = self.payload_bytes()?;
+        #[allow(clippy::useless_asref)]
         let deser = P::read(&mut payload_bytes.as_ref()).ok()?;
 
         (deser.written_size() == payload_bytes.len()).then_some(deser)

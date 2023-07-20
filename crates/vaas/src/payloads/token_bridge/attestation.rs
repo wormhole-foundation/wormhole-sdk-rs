@@ -6,7 +6,6 @@ use std::io;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Attestation {
-    pub ty: u8,
     pub token_address: FixedBytes<32>,
     pub token_chain: u16,
     pub decimals: u8,
@@ -38,7 +37,7 @@ impl Attestation {
 }
 
 impl Readable for Attestation {
-    const SIZE: Option<usize> = Some(1 + 32 + 2 + 1 + 32 + 32);
+    const SIZE: Option<usize> = Some(32 + 2 + 1 + 32 + 32);
 
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
@@ -46,7 +45,6 @@ impl Readable for Attestation {
         R: io::Read,
     {
         Ok(Self {
-            ty: Readable::read(reader)?,
             token_address: Readable::read(reader)?,
             token_chain: Readable::read(reader)?,
             decimals: Readable::read(reader)?,
@@ -66,7 +64,6 @@ impl Writeable for Attestation {
         Self: Sized,
         W: io::Write,
     {
-        self.ty.write(writer)?;
         self.token_address.write(writer)?;
         self.token_chain.write(writer)?;
         self.decimals.write(writer)?;
@@ -81,7 +78,7 @@ mod test {
     use alloy_primitives::{FixedBytes, U64};
     use hex_literal::hex;
 
-    use crate::{payloads::token_bridge::Attestation, Readable, Vaa, Writeable};
+    use crate::{payloads::token_bridge::TokenBridgeMessage, Readable, Vaa, Writeable};
 
     #[test]
     fn parse_token_bridge_attestation() {
@@ -101,24 +98,28 @@ mod test {
         assert_eq!(vaa.body.sequence, U64::from(11833801757748136510u64));
         assert_eq!(vaa.body.consistency_level, 32);
 
-        let attestation = vaa.body.read_payload::<Attestation>().unwrap();
-        assert_eq!(attestation.to_vec(), vaa.body.payload_bytes().unwrap());
+        let msg = vaa.body.read_payload::<TokenBridgeMessage>().unwrap();
+        assert_eq!(msg.to_vec(), vaa.body.payload_bytes().unwrap());
 
-        assert_eq!(
-            attestation.token_address,
-            hex!("000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2")
-        );
-        assert_eq!(attestation.token_chain, 2);
-        assert_eq!(attestation.decimals, 18);
+        if let TokenBridgeMessage::Attestation(attestation) = msg {
+            assert_eq!(
+                attestation.token_address,
+                hex!("000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2")
+            );
+            assert_eq!(attestation.token_chain, 2);
+            assert_eq!(attestation.decimals, 18);
 
-        assert_eq!(attestation.symbol_string(), "WETH");
-        assert_eq!(attestation.name_string(), "Wrapped ether");
+            assert_eq!(attestation.symbol_string(), "WETH");
+            assert_eq!(attestation.name_string(), "Wrapped ether");
 
-        assert_eq!(
-            vaa.body.double_digest(),
-            FixedBytes(hex!(
-                "4bb52b9a44ff6062ba5db1c47afc40c186f7485c8972b1c6261eb070ce0b1c6e"
-            ))
-        );
+            assert_eq!(
+                vaa.body.double_digest(),
+                FixedBytes(hex!(
+                    "4bb52b9a44ff6062ba5db1c47afc40c186f7485c8972b1c6261eb070ce0b1c6e"
+                ))
+            );
+        } else {
+            panic!("Wrong message type");
+        }
     }
 }
