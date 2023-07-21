@@ -35,8 +35,8 @@ pub(crate) mod fixed_bytes_as_array {
                 A: SeqAccess<'de>,
             {
                 let mut bytes = [0u8; N];
-                for i in 0..N {
-                    bytes[i] = seq
+                for (i, b) in bytes.iter_mut().enumerate() {
+                    *b = seq
                         .next_element()?
                         .ok_or_else(|| de::Error::invalid_length(i, &self))?;
                 }
