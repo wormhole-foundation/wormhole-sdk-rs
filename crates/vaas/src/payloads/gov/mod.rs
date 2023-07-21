@@ -1,3 +1,16 @@
+//! The specification for Governance messages is the following:
+//! - module (32 bytes)
+//! - action (1 byte)
+//! - target chain (2 bytes)
+//! - decree (message payload encoding governance instruction).
+//!
+//! The structs in this module deviate from the specification where the header only specifies the
+//! module for which smart contract the governance is relevant. What this SDK calls the payload
+//! starts with an action discriminator (1 byte) and the remaining bytes is the governance decree,
+//! which for all of these governance decrees will start with two bytes. Either these two bytes will
+//! be zeroed out (for global governance actions) or it will encode the chain ID relevant for the
+//! governance action.
+
 pub mod core_bridge;
 pub use core_bridge::{
     ContractUpgrade, GuardianSetUpdate, RecoverChainId, SetMessageFee, TransferFees,
