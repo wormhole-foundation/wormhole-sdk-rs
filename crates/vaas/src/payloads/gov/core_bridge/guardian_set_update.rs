@@ -1,11 +1,11 @@
 use crate::{Readable, Writeable};
-use alloy_primitives::FixedBytes;
+use alloy_primitives::{Address, FixedBytes};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GuardianSetUpdate {
     _gap: FixedBytes<2>, // This should never be encoded with anything.
     pub new_index: u32,
-    pub guardians: Vec<FixedBytes<20>>,
+    pub guardians: Vec<Address>,
 }
 
 impl Readable for GuardianSetUpdate {
@@ -26,7 +26,7 @@ impl Readable for GuardianSetUpdate {
         let new_index = u32::read(reader)?;
         let num_guardians = u8::read(reader)?;
         let guardians: Vec<_> = (0..num_guardians)
-            .filter_map(|_| FixedBytes::<20>::read(reader).ok())
+            .filter_map(|_| Address::read(reader).ok())
             .collect();
 
         Ok(Self {
