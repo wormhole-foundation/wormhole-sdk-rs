@@ -18,6 +18,12 @@ pub enum TokenBridgeMessage {
     TransferWithMessage(TransferWithMessage),
 }
 
+impl TokenBridgeMessage {
+    const TRANSFER: u8 = 1;
+    const ATTESTATION: u8 = 2;
+    const TRANSFER_WITH_MESSAGE: u8 = 3;
+}
+
 impl Readable for TokenBridgeMessage {
     const SIZE: Option<usize> = None;
 
@@ -27,11 +33,15 @@ impl Readable for TokenBridgeMessage {
         R: std::io::Read,
     {
         match u8::read(reader)? {
-            1 => Ok(TokenBridgeMessage::Transfer(Readable::read(reader)?)),
-            2 => Ok(TokenBridgeMessage::Attestation(Readable::read(reader)?)),
-            3 => Ok(TokenBridgeMessage::TransferWithMessage(Readable::read(
-                reader,
-            )?)),
+            TokenBridgeMessage::TRANSFER => {
+                Ok(TokenBridgeMessage::Transfer(Readable::read(reader)?))
+            }
+            TokenBridgeMessage::ATTESTATION => {
+                Ok(TokenBridgeMessage::Attestation(Readable::read(reader)?))
+            }
+            TokenBridgeMessage::TRANSFER_WITH_MESSAGE => Ok(
+                TokenBridgeMessage::TransferWithMessage(Readable::read(reader)?),
+            ),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Invalid token bridge message type",
@@ -47,15 +57,15 @@ impl Writeable for TokenBridgeMessage {
     {
         match self {
             TokenBridgeMessage::Transfer(inner) => {
-                u8::write(&1, writer)?;
+                TokenBridgeMessage::TRANSFER.write(writer)?;
                 inner.write(writer)
             }
             TokenBridgeMessage::Attestation(inner) => {
-                u8::write(&2, writer)?;
+                TokenBridgeMessage::ATTESTATION.write(writer)?;
                 inner.write(writer)
             }
             TokenBridgeMessage::TransferWithMessage(inner) => {
-                u8::write(&3, writer)?;
+                TokenBridgeMessage::TRANSFER_WITH_MESSAGE.write(writer)?;
                 inner.write(writer)
             }
         }

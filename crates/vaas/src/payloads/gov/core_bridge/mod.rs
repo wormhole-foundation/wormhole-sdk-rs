@@ -33,6 +33,14 @@ pub enum Decree {
     RecoverChainId(RecoverChainId),
 }
 
+impl Decree {
+    const CONTRACT_UPGRADE: u8 = 1;
+    const GUARDIAN_SET_UPDATE: u8 = 2;
+    const SET_MESSAGE_FEE: u8 = 3;
+    const TRANSFER_FEES: u8 = 4;
+    const RECOVER_CHAIN_ID: u8 = 5;
+}
+
 impl Writeable for Decree {
     fn write<W>(&self, writer: &mut W) -> std::io::Result<()>
     where
@@ -40,23 +48,23 @@ impl Writeable for Decree {
     {
         match self {
             Decree::ContractUpgrade(inner) => {
-                u8::write(&1, writer)?;
+                Decree::CONTRACT_UPGRADE.write(writer)?;
                 inner.write(writer)
             }
             Decree::GuardianSetUpdate(inner) => {
-                u8::write(&2, writer)?;
+                Decree::GUARDIAN_SET_UPDATE.write(writer)?;
                 inner.write(writer)
             }
             Decree::SetMessageFee(inner) => {
-                u8::write(&3, writer)?;
+                Decree::SET_MESSAGE_FEE.write(writer)?;
                 inner.write(writer)
             }
             Decree::TransferFees(inner) => {
-                u8::write(&4, writer)?;
+                Decree::TRANSFER_FEES.write(writer)?;
                 inner.write(writer)
             }
             Decree::RecoverChainId(inner) => {
-                u8::write(&5, writer)?;
+                Decree::RECOVER_CHAIN_ID.write(writer)?;
                 inner.write(writer)
             }
         }
@@ -89,11 +97,11 @@ impl Readable for GovernanceMessage<Decree> {
         }
 
         let decree = match u8::read(reader)? {
-            1 => Decree::ContractUpgrade(Readable::read(reader)?),
-            2 => Decree::GuardianSetUpdate(Readable::read(reader)?),
-            3 => Decree::SetMessageFee(Readable::read(reader)?),
-            4 => Decree::TransferFees(Readable::read(reader)?),
-            5 => Decree::RecoverChainId(Readable::read(reader)?),
+            Decree::CONTRACT_UPGRADE => Decree::ContractUpgrade(Readable::read(reader)?),
+            Decree::GUARDIAN_SET_UPDATE => Decree::GuardianSetUpdate(Readable::read(reader)?),
+            Decree::SET_MESSAGE_FEE => Decree::SetMessageFee(Readable::read(reader)?),
+            Decree::TRANSFER_FEES => Decree::TransferFees(Readable::read(reader)?),
+            Decree::RECOVER_CHAIN_ID => Decree::RecoverChainId(Readable::read(reader)?),
             _ => {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::InvalidData,

@@ -21,6 +21,12 @@ pub enum Decree {
     RecoverChainId(RecoverChainId),
 }
 
+impl Decree {
+    const REGISTER_CHAIN: u8 = 1;
+    const CONTRACT_UPGRADE: u8 = 2;
+    const RECOVER_CHAIN_ID: u8 = 3;
+}
+
 impl Writeable for Decree {
     fn write<W>(&self, writer: &mut W) -> std::io::Result<()>
     where
@@ -28,15 +34,15 @@ impl Writeable for Decree {
     {
         match self {
             Decree::RegisterChain(inner) => {
-                u8::write(&1, writer)?;
+                Decree::REGISTER_CHAIN.write(writer)?;
                 inner.write(writer)
             }
             Decree::ContractUpgrade(inner) => {
-                u8::write(&2, writer)?;
+                Decree::CONTRACT_UPGRADE.write(writer)?;
                 inner.write(writer)
             }
             Decree::RecoverChainId(inner) => {
-                u8::write(&3, writer)?;
+                Decree::RECOVER_CHAIN_ID.write(writer)?;
                 inner.write(writer)
             }
         }
@@ -67,9 +73,9 @@ impl Readable for GovernanceMessage<Decree> {
         }
 
         let decree = match u8::read(reader)? {
-            1 => Decree::RegisterChain(Readable::read(reader)?),
-            2 => Decree::ContractUpgrade(Readable::read(reader)?),
-            3 => Decree::RecoverChainId(Readable::read(reader)?),
+            Decree::REGISTER_CHAIN => Decree::RegisterChain(Readable::read(reader)?),
+            Decree::CONTRACT_UPGRADE => Decree::ContractUpgrade(Readable::read(reader)?),
+            Decree::RECOVER_CHAIN_ID => Decree::RecoverChainId(Readable::read(reader)?),
             _ => {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::InvalidData,
