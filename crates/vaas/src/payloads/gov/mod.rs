@@ -81,9 +81,7 @@ impl<P: TypePrefixedPayload> Writeable for GovernanceMessage<P> {
     }
 
     fn written_size(&self) -> usize {
-        // if the decree is untyped, we need to account for that in the written
-        // size
-        self.header.written_size() + self.decree.payload_written_size() + P::TYPE.is_some() as usize
+        self.header.written_size() + self.decree.payload_written_size()
     }
 }
 
