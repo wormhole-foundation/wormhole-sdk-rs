@@ -91,12 +91,13 @@ mod tests {
         );
 
         let msg = vaa.body.read_payload::<TokenBridgeMessage>().unwrap();
+
         assert_eq!(msg.to_vec(), vaa.body.payload_bytes().unwrap());
 
-        if let TokenBridgeMessage::Transfer(transfer) = msg {
+        if let TokenBridgeMessage::Transfer(transfer) = &msg {
             assert_eq!(
                 transfer,
-                Transfer {
+                &Transfer {
                     norm_amount: U256::from(10000000000u64),
                     token_address: hex!(
                         "165809739240a0ac03b98440fe8985548e3aa683cd0d4d9df5b5659669faa301"
@@ -114,6 +115,12 @@ mod tests {
         } else {
             panic!("wrong message type");
         }
+
+        // let msg_2 = vaa.body.read_payload::<Transfer>().unwrap();
+
+        let msg_2 = Transfer::read_payload(&mut vaa.body.payload_bytes().unwrap()).unwrap();
+
+        assert_eq!(TokenBridgeMessage::Transfer(msg_2), msg);
     }
 
     // https://github.com/wormhole-foundation/wormhole/blob/b09a644dac97fa8e037a16765728217ff3a1d057/clients/js/parse_tests/token-bridge-transfer-2.expected

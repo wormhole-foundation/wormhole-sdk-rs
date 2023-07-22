@@ -31,6 +31,21 @@ impl Readable for Vaa {
     }
 }
 
+impl Writeable for Vaa {
+    fn write<W>(&self, writer: &mut W) -> io::Result<()>
+    where
+        W: io::Write,
+    {
+        self.header.write(writer)?;
+        self.body.write(writer)?;
+        Ok(())
+    }
+
+    fn written_size(&self) -> usize {
+        self.header.written_size() + self.body.written_size()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
@@ -153,7 +168,8 @@ impl VaaBody {
         #[allow(clippy::useless_asref)]
         let deser = P::read_payload(&mut payload_bytes.as_ref()).ok()?;
 
-        (deser.written_size() == payload_bytes.len()).then_some(deser)
+        ((deser.written_size() + P::TYPE.is_some() as usize) == payload_bytes.len())
+            .then_some(deser)
     }
 
     pub fn payload_as_message(&self) -> Option<payloads::Message> {
