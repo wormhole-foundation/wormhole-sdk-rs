@@ -168,6 +168,8 @@ impl VaaBody {
         #[allow(clippy::useless_asref)]
         let deser = P::read_payload(&mut payload_bytes.as_ref()).ok()?;
 
+        // if the payload is typed, the type byte must be added to the written
+        // size.
         ((deser.written_size() + P::TYPE.is_some() as usize) == payload_bytes.len())
             .then_some(deser)
     }
