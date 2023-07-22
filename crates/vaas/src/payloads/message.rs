@@ -2,7 +2,9 @@ use crate::{Readable, Writeable};
 
 use std::io;
 
-impl crate::payloads::Payload for Message {}
+impl crate::payloads::TypePrefixedPayload for Message {
+    const TYPE: Option<u8> = None;
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Message {

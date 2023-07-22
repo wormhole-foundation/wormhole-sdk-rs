@@ -1,10 +1,14 @@
-use crate::{Readable, Writeable};
+use crate::{Readable, TypePrefixedPayload, Writeable};
 use alloy_primitives::FixedBytes;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ContractUpgrade {
     pub chain: u16,
     pub implementation: FixedBytes<32>,
+}
+
+impl TypePrefixedPayload for ContractUpgrade {
+    const TYPE: Option<u8> = Some(1);
 }
 
 impl Readable for ContractUpgrade {

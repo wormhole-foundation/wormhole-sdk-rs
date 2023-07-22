@@ -1,6 +1,6 @@
 use alloy_primitives::{FixedBytes, U256};
 
-use crate::{Readable, Writeable};
+use crate::{Readable, TypePrefixedPayload, Writeable};
 
 use std::io;
 
@@ -13,6 +13,10 @@ pub struct TransferWithMessage {
     redeemer_chain: u16,
     sender: FixedBytes<32>,
     payload: Vec<u8>,
+}
+
+impl TypePrefixedPayload for TransferWithMessage {
+    const TYPE: Option<u8> = Some(3);
 }
 
 impl Readable for TransferWithMessage {

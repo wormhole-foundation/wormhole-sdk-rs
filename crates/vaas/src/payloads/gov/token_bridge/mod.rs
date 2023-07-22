@@ -1,13 +1,15 @@
 mod register_chain;
 pub use register_chain::RegisterChain;
 
-pub use super::core_bridge::{ContractUpgrade, RecoverChainId};
+mod recover_chain_id;
+pub use recover_chain_id::RecoverChainId;
 
-use crate::{Readable, Writeable};
+mod contract_upgrade;
+pub use contract_upgrade::ContractUpgrade;
+
+use crate::{Readable, TypePrefixedPayload, Writeable};
 use alloy_primitives::FixedBytes;
 use hex_literal::hex;
-
-use super::{GovernanceHeader, GovernanceMessage};
 
 /// A.K.A. "TokenBridge".
 pub const GOVERNANCE_MODULE: FixedBytes<32> = FixedBytes(hex!(
@@ -21,10 +23,8 @@ pub enum Decree {
     RecoverChainId(RecoverChainId),
 }
 
-impl Decree {
-    const REGISTER_CHAIN: u8 = 1;
-    const CONTRACT_UPGRADE: u8 = 2;
-    const RECOVER_CHAIN_ID: u8 = 3;
+impl TypePrefixedPayload for Decree {
+    const TYPE: Option<u8> = None;
 }
 
 impl Writeable for Decree {
@@ -33,18 +33,9 @@ impl Writeable for Decree {
         W: std::io::Write,
     {
         match self {
-            Decree::RegisterChain(inner) => {
-                Decree::REGISTER_CHAIN.write(writer)?;
-                inner.write(writer)
-            }
-            Decree::ContractUpgrade(inner) => {
-                Decree::CONTRACT_UPGRADE.write(writer)?;
-                inner.write(writer)
-            }
-            Decree::RecoverChainId(inner) => {
-                Decree::RECOVER_CHAIN_ID.write(writer)?;
-                inner.write(writer)
-            }
+            Decree::RegisterChain(inner) => inner.write_payload(writer),
+            Decree::ContractUpgrade(inner) => inner.write_payload(writer),
+            Decree::RecoverChainId(inner) => inner.write_payload(writer),
         }
     }
 
@@ -57,25 +48,23 @@ impl Writeable for Decree {
     }
 }
 
-impl Readable for GovernanceMessage<Decree> {
+impl Readable for Decree {
     const SIZE: Option<usize> = None;
 
     fn read<R>(reader: &mut R) -> std::io::Result<Self>
     where
         R: std::io::Read,
     {
-        let header = GovernanceHeader::read(reader)?;
-        if header.module != GOVERNANCE_MODULE {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "Invalid module",
-            ));
-        }
-
-        let decree = match u8::read(reader)? {
-            Decree::REGISTER_CHAIN => Decree::RegisterChain(Readable::read(reader)?),
-            Decree::CONTRACT_UPGRADE => Decree::ContractUpgrade(Readable::read(reader)?),
-            Decree::RECOVER_CHAIN_ID => Decree::RecoverChainId(Readable::read(reader)?),
+        let decree = match Some(u8::read(reader)?) {
+            <RegisterChain as TypePrefixedPayload>::TYPE => {
+                Decree::RegisterChain(Readable::read(reader)?)
+            }
+            <ContractUpgrade as TypePrefixedPayload>::TYPE => {
+                Decree::ContractUpgrade(Readable::read(reader)?)
+            }
+            <RecoverChainId as TypePrefixedPayload>::TYPE => {
+                Decree::RecoverChainId(Readable::read(reader)?)
+            }
             _ => {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::InvalidData,
@@ -84,6 +73,6 @@ impl Readable for GovernanceMessage<Decree> {
             }
         };
 
-        Ok(Self { header, decree })
+        Ok(decree)
     }
 }

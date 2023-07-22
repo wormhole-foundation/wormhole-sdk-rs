@@ -1,4 +1,4 @@
-use crate::{Readable, Writeable};
+use crate::{Readable, TypePrefixedPayload, Writeable};
 use alloy_primitives::{Address, FixedBytes};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -6,6 +6,10 @@ pub struct GuardianSetUpdate {
     _gap: FixedBytes<2>, // This should never be encoded with anything.
     pub new_index: u32,
     pub guardians: Vec<Address>,
+}
+
+impl TypePrefixedPayload for GuardianSetUpdate {
+    const TYPE: Option<u8> = Some(2);
 }
 
 impl Readable for GuardianSetUpdate {

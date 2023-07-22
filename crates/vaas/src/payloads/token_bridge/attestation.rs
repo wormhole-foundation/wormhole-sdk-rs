@@ -1,6 +1,6 @@
 use alloy_primitives::FixedBytes;
 
-use crate::{Readable, Writeable};
+use crate::{Readable, TypePrefixedPayload, Writeable};
 
 use std::io;
 
@@ -34,6 +34,10 @@ impl Attestation {
 
         String::from_utf8_lossy(bytes).into_owned()
     }
+}
+
+impl TypePrefixedPayload for Attestation {
+    const TYPE: Option<u8> = Some(2);
 }
 
 impl Readable for Attestation {

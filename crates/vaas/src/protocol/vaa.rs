@@ -2,7 +2,7 @@ use alloy_primitives::{FixedBytes, U64};
 
 use crate::{
     payloads::{self, PayloadKind},
-    utils, Payload,
+    utils, TypePrefixedPayload,
 };
 pub use crate::{GuardianSetSig, Readable, Writeable};
 
@@ -148,10 +148,10 @@ impl VaaBody {
         }
     }
 
-    pub fn read_payload<P: Payload>(&self) -> Option<P> {
+    pub fn read_payload<P: TypePrefixedPayload>(&self) -> Option<P> {
         let payload_bytes = self.payload_bytes()?;
         #[allow(clippy::useless_asref)]
-        let deser = P::read(&mut payload_bytes.as_ref()).ok()?;
+        let deser = P::read_payload(&mut payload_bytes.as_ref()).ok()?;
 
         (deser.written_size() == payload_bytes.len()).then_some(deser)
     }
@@ -171,7 +171,7 @@ impl VaaBody {
     }
 
     #[cfg(feature = "serde")]
-    pub fn deser_payload<P: Payload + serde::de::DeserializeOwned>(&self) -> Option<P> {
+    pub fn deser_payload<P: TypePrefixedPayload + serde::de::DeserializeOwned>(&self) -> Option<P> {
         match &self.payload {
             PayloadKind::Json(value) => serde_json::from_value(value.clone()).ok(),
             _ => None,

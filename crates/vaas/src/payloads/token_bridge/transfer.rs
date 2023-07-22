@@ -1,6 +1,6 @@
 use alloy_primitives::{FixedBytes, U256};
 
-use crate::{Readable, Writeable};
+use crate::{Readable, TypePrefixedPayload, Writeable};
 
 use std::io;
 
@@ -12,6 +12,10 @@ pub struct Transfer {
     recipient: FixedBytes<32>,
     recipient_chain: u16,
     norm_relayer_fee: U256,
+}
+
+impl TypePrefixedPayload for Transfer {
+    const TYPE: Option<u8> = Some(1);
 }
 
 impl Readable for Transfer {
