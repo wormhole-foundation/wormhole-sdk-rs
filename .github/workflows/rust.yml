@@ -9,25 +9,25 @@ env:
     CARGO_TERM_COLOR: always
 
 jobs:
-  test:
-      name: test ${{ matrix.rust }} ${{ matrix.flags }}
-      runs-on: ubuntu-latest
-      timeout-minutes: 30
-      strategy:
-          fail-fast: false
-          matrix:
-              rust: ["stable", "beta", "nightly", "1.65"] # MSRV
-              flags: ["--no-default-features", "", "--all-features"]
-      steps:
-          - uses: actions/checkout@v3
-          - uses: dtolnay/rust-toolchain@master
-            with:
-                toolchain: ${{ matrix.rust }}
-          - uses: Swatinem/rust-cache@v2
-          - name: test
-            run: cargo test --workspace ${{ matrix.flags }}
+    test:
+        name: test ${{ matrix.rust }} ${{ matrix.flags }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        strategy:
+            fail-fast: false
+            matrix:
+                rust: ["stable", "beta", "nightly", "1.65"] # MSRV
+                flags: ["--no-default-features", "", "--all-features"]
+        steps:
+            - uses: actions/checkout@v3
+            - uses: dtolnay/rust-toolchain@master
+              with:
+                  toolchain: ${{ matrix.rust }}
+            - uses: Swatinem/rust-cache@v2
+            - name: test
+              run: cargo test --workspace ${{ matrix.flags }}
 
-  clippy:
+    clippy:
         name: clippy
         runs-on: ubuntu-latest
         timeout-minutes: 30
