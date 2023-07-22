@@ -14,12 +14,17 @@ repository.workspace = true
 alloy-primitives.workspace = true
 async-trait = "0.1.72"
 base64 = "0.21.2"
+hex = "0.4.3"
 reqwest = { version = "0.11.18", features = ["json"] }
 serde.workspace = true
 serde_json.workspace = true
 thiserror = "1.0.44"
+tracing = "0.1.37"
+tracing-futures = "0.2.5"
+uuid = { version = "1.4.1", features = ["v4"] }
 
 wormhole-vaas = { workspace = true, features = ["serde"] }
 
 [dev-dependencies]
+hex-literal.workspace = true
 tokio = { version = "1.29.1", features = ["macros", "test-util"] }
