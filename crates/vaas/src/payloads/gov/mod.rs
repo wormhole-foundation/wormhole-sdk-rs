@@ -62,16 +62,16 @@ impl Writeable for GovernanceHeader {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct GovernanceMessage<D: Writeable> {
+pub struct GovernanceMessage<P> {
     pub header: GovernanceHeader,
-    pub decree: D,
+    pub decree: P,
 }
 
 impl<P: TypePrefixedPayload> TypePrefixedPayload for GovernanceMessage<P> {
     const TYPE: Option<u8> = None;
 }
 
-impl<D: TypePrefixedPayload> Writeable for GovernanceMessage<D> {
+impl<P: TypePrefixedPayload> Writeable for GovernanceMessage<P> {
     fn write<W>(&self, writer: &mut W) -> std::io::Result<()>
     where
         W: std::io::Write,
@@ -83,11 +83,11 @@ impl<D: TypePrefixedPayload> Writeable for GovernanceMessage<D> {
     fn written_size(&self) -> usize {
         // if the decree is untyped, we need to account for that in the written
         // size
-        self.header.written_size() + self.decree.written_size() + D::TYPE.is_some() as usize
+        self.header.written_size() + self.decree.payload_written_size() + P::TYPE.is_some() as usize
     }
 }
 
-impl<D: TypePrefixedPayload> Readable for GovernanceMessage<D> {
+impl<P: TypePrefixedPayload> Readable for GovernanceMessage<P> {
     const SIZE: Option<usize> = None;
 
     fn read<R>(reader: &mut R) -> std::io::Result<Self>

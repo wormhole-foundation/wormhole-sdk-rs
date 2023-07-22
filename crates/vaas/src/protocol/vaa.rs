@@ -117,7 +117,7 @@ pub struct VaaBody {
 
 impl Writeable for VaaBody {
     fn written_size(&self) -> usize {
-        4 + 4 + 2 + 32 + 8 + 1 + self.payload.written_size()
+        4 + 4 + 2 + 32 + 8 + 1 + self.payload.payload_written_size()
     }
 
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
@@ -170,8 +170,7 @@ impl VaaBody {
 
         // if the payload is typed, the type byte must be added to the written
         // size.
-        ((deser.written_size() + P::TYPE.is_some() as usize) == payload_bytes.len())
-            .then_some(deser)
+        (deser.payload_written_size() == payload_bytes.len()).then_some(deser)
     }
 
     pub fn payload_as_message(&self) -> Option<payloads::Message> {
