@@ -7,7 +7,7 @@ pub use transfer::Transfer;
 mod transfer_with_message;
 pub use transfer_with_message::TransferWithMessage;
 
-use crate::payloads::{Payload, Readable, Writeable};
+use crate::payloads::{Readable, TypePrefixedPayload, Writeable};
 
 // TODO: make normalizer struct for norm amount/relayer_fee.
 
@@ -18,12 +18,6 @@ pub enum TokenBridgeMessage {
     TransferWithMessage(TransferWithMessage),
 }
 
-impl TokenBridgeMessage {
-    const TRANSFER: u8 = 1;
-    const ATTESTATION: u8 = 2;
-    const TRANSFER_WITH_MESSAGE: u8 = 3;
-}
-
 impl Readable for TokenBridgeMessage {
     const SIZE: Option<usize> = None;
 
@@ -32,14 +26,14 @@ impl Readable for TokenBridgeMessage {
         Self: Sized,
         R: std::io::Read,
     {
-        match u8::read(reader)? {
-            TokenBridgeMessage::TRANSFER => {
+        match Some(u8::read(reader)?) {
+            <Transfer as TypePrefixedPayload>::TYPE => {
                 Ok(TokenBridgeMessage::Transfer(Readable::read(reader)?))
             }
-            TokenBridgeMessage::ATTESTATION => {
+            <Attestation as TypePrefixedPayload>::TYPE => {
                 Ok(TokenBridgeMessage::Attestation(Readable::read(reader)?))
             }
-            TokenBridgeMessage::TRANSFER_WITH_MESSAGE => Ok(
+            <TransferWithMessage as TypePrefixedPayload>::TYPE => Ok(
                 TokenBridgeMessage::TransferWithMessage(Readable::read(reader)?),
             ),
             _ => Err(std::io::Error::new(
@@ -56,18 +50,9 @@ impl Writeable for TokenBridgeMessage {
         W: std::io::Write,
     {
         match self {
-            TokenBridgeMessage::Transfer(inner) => {
-                TokenBridgeMessage::TRANSFER.write(writer)?;
-                inner.write(writer)
-            }
-            TokenBridgeMessage::Attestation(inner) => {
-                TokenBridgeMessage::ATTESTATION.write(writer)?;
-                inner.write(writer)
-            }
-            TokenBridgeMessage::TransferWithMessage(inner) => {
-                TokenBridgeMessage::TRANSFER_WITH_MESSAGE.write(writer)?;
-                inner.write(writer)
-            }
+            TokenBridgeMessage::Transfer(inner) => inner.write_payload(writer),
+            TokenBridgeMessage::Attestation(inner) => inner.write_payload(writer),
+            TokenBridgeMessage::TransferWithMessage(inner) => inner.write_payload(writer),
         }
     }
 
@@ -80,4 +65,6 @@ impl Writeable for TokenBridgeMessage {
     }
 }
 
-impl Payload for TokenBridgeMessage {}
+impl TypePrefixedPayload for TokenBridgeMessage {
+    const TYPE: Option<u8> = None;
+}

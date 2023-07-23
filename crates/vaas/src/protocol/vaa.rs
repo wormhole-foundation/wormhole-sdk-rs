@@ -2,7 +2,7 @@ use alloy_primitives::{FixedBytes, U64};
 
 use crate::{
     payloads::{self, PayloadKind},
-    utils, Payload,
+    utils, TypePrefixedPayload,
 };
 pub use crate::{GuardianSetSig, Readable, Writeable};
 
@@ -28,6 +28,21 @@ impl Readable for Vaa {
         let header = VaaHeader::read(reader)?;
         let body = VaaBody::read(reader)?;
         Ok(Self { header, body })
+    }
+}
+
+impl Writeable for Vaa {
+    fn write<W>(&self, writer: &mut W) -> io::Result<()>
+    where
+        W: io::Write,
+    {
+        self.header.write(writer)?;
+        self.body.write(writer)?;
+        Ok(())
+    }
+
+    fn written_size(&self) -> usize {
+        self.header.written_size() + self.body.written_size()
     }
 }
 
@@ -102,7 +117,7 @@ pub struct VaaBody {
 
 impl Writeable for VaaBody {
     fn written_size(&self) -> usize {
-        4 + 4 + 2 + 32 + 8 + 1 + self.payload.written_size()
+        4 + 4 + 2 + 32 + 8 + 1 + self.payload.payload_written_size()
     }
 
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
@@ -148,12 +163,14 @@ impl VaaBody {
         }
     }
 
-    pub fn read_payload<P: Payload>(&self) -> Option<P> {
+    pub fn read_payload<P: TypePrefixedPayload>(&self) -> Option<P> {
         let payload_bytes = self.payload_bytes()?;
         #[allow(clippy::useless_asref)]
-        let deser = P::read(&mut payload_bytes.as_ref()).ok()?;
+        let deser = P::read_payload(&mut payload_bytes.as_ref()).ok()?;
 
-        (deser.written_size() == payload_bytes.len()).then_some(deser)
+        // if the payload is typed, the type byte must be added to the written
+        // size.
+        (deser.payload_written_size() == payload_bytes.len()).then_some(deser)
     }
 
     pub fn payload_as_message(&self) -> Option<payloads::Message> {
@@ -171,7 +188,7 @@ impl VaaBody {
     }
 
     #[cfg(feature = "serde")]
-    pub fn deser_payload<P: Payload + serde::de::DeserializeOwned>(&self) -> Option<P> {
+    pub fn deser_payload<P: TypePrefixedPayload + serde::de::DeserializeOwned>(&self) -> Option<P> {
         match &self.payload {
             PayloadKind::Json(value) => serde_json::from_value(value.clone()).ok(),
             _ => None,

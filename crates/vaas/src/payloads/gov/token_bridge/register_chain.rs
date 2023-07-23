@@ -1,11 +1,21 @@
-use crate::{Readable, Writeable};
+use crate::{Readable, TypePrefixedPayload, Writeable};
 use alloy_primitives::FixedBytes;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RegisterChain {
-    _gap: FixedBytes<2>, // This should never be encoded with anything.
+    /// This is a placeholder for the `chain` field in the
+    /// [`GovernanceHeader`]. The `chain` field is never used for
+    /// `RegisterChain` messages. It must be decoded, and should always be
+    /// empty.
+    ///
+    /// [`Governanceheader`]: crate::payloads::gov::GovernanceHeader
+    _gap: FixedBytes<2>,
     pub foreign_chain: u16,
     pub foreign_emitter: FixedBytes<32>,
+}
+
+impl TypePrefixedPayload for RegisterChain {
+    const TYPE: Option<u8> = Some(1);
 }
 
 impl Readable for RegisterChain {

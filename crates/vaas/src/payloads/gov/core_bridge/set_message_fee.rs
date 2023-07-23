@@ -1,10 +1,14 @@
-use crate::{Readable, Writeable};
+use crate::{Readable, TypePrefixedPayload, Writeable};
 use alloy_primitives::U256;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SetMessageFee {
     pub chain: u16,
     pub fee: U256,
+}
+
+impl TypePrefixedPayload for SetMessageFee {
+    const TYPE: Option<u8> = Some(3);
 }
 
 impl Readable for SetMessageFee {
