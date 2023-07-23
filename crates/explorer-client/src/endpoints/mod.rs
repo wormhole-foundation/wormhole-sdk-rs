@@ -38,7 +38,7 @@ pub trait ApiCall: Send + Sync + Debug {
         url.set_path(&self.endpoint());
 
         // populate span with above
-        tracing::Span::current().record("url", &url.as_str());
+        tracing::Span::current().record("url", url.as_str());
         tracing::Span::current().record("uuid", &uuid.to_string());
 
         tracing::debug!("prepped response");

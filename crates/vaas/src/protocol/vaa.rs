@@ -164,13 +164,11 @@ impl VaaBody {
     }
 
     pub fn read_payload<P: TypePrefixedPayload>(&self) -> Option<P> {
-        let payload_bytes = self.payload_bytes()?;
-        #[allow(clippy::useless_asref)]
-        let deser = P::read_payload(&mut payload_bytes.as_ref()).ok()?;
+        let mut p = self.payload_bytes()?;
+        let deser = P::read_payload(&mut p).ok()?;
 
-        // if the payload is typed, the type byte must be added to the written
-        // size.
-        (deser.payload_written_size() == payload_bytes.len()).then_some(deser)
+        // Check that the payload is fully consumed. No extra bytes allowed.
+        p.is_empty().then_some(deser)
     }
 
     pub fn payload_as_message(&self) -> Option<payloads::Message> {
