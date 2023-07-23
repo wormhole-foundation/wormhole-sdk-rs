@@ -6,13 +6,13 @@ use std::io;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TransferWithMessage {
-    norm_amount: U256,
-    token_address: FixedBytes<32>,
-    token_chain: u16,
-    redeemer: FixedBytes<32>,
-    redeemer_chain: u16,
-    sender: FixedBytes<32>,
-    payload: Vec<u8>,
+    pub norm_amount: U256,
+    pub token_address: FixedBytes<32>,
+    pub token_chain: u16,
+    pub redeemer: FixedBytes<32>,
+    pub redeemer_chain: u16,
+    pub sender: FixedBytes<32>,
+    pub payload: Vec<u8>,
 }
 
 impl TypePrefixedPayload for TransferWithMessage {
