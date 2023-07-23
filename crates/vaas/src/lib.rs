@@ -5,7 +5,7 @@ pub mod utils;
 pub use utils::{keccak256, quorum};
 
 pub mod payloads;
-pub use payloads::{Payload, PayloadKind};
+pub use payloads::{PayloadKind, TypePrefixedPayload};
 
 mod protocol;
 pub use protocol::{

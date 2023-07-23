@@ -1,6 +1,6 @@
 use std::io;
 
-use alloy_primitives::{FixedBytes, Uint};
+use alloy_primitives::{Address, FixedBytes, Uint};
 
 pub trait Readable {
     const SIZE: Option<usize>;
@@ -204,5 +204,30 @@ impl<const BITS: usize, const LIMBS: usize> Writeable for Uint<BITS, LIMBS> {
         W: io::Write,
     {
         writer.write_all(self.to_be_bytes_vec().as_slice())
+    }
+}
+
+impl Readable for Address {
+    const SIZE: Option<usize> = Some(20);
+
+    fn read<R>(reader: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+        R: io::Read,
+    {
+        FixedBytes::<20>::read(reader).map(Self)
+    }
+}
+
+impl Writeable for Address {
+    fn written_size(&self) -> usize {
+        <Self as Readable>::SIZE.unwrap()
+    }
+
+    fn write<W>(&self, writer: &mut W) -> io::Result<()>
+    where
+        W: io::Write,
+    {
+        self.0.write(writer)
     }
 }

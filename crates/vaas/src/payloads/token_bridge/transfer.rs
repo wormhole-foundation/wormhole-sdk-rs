@@ -1,35 +1,37 @@
 use alloy_primitives::{FixedBytes, U256};
 
-use crate::{Readable, Writeable};
+use crate::{Readable, TypePrefixedPayload, Writeable};
 
 use std::io;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Transfer {
-    pub ty: u8,
-    pub amount: U256,
-    pub token_address: FixedBytes<32>,
-    pub token_chain: u16,
-    pub to: FixedBytes<32>,
-    pub to_chain: u16,
-    pub fee: U256,
+    norm_amount: U256,
+    token_address: FixedBytes<32>,
+    token_chain: u16,
+    recipient: FixedBytes<32>,
+    recipient_chain: u16,
+    norm_relayer_fee: U256,
+}
+
+impl TypePrefixedPayload for Transfer {
+    const TYPE: Option<u8> = Some(1);
 }
 
 impl Readable for Transfer {
-    const SIZE: Option<usize> = Some(1 + 32 + 32 + 2 + 32 + 2 + 32);
+    const SIZE: Option<usize> = Some(32 + 32 + 2 + 32 + 2 + 32);
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         Self: Sized,
         R: io::Read,
     {
         Ok(Self {
-            ty: Readable::read(reader)?,
-            amount: Readable::read(reader)?,
+            norm_amount: Readable::read(reader)?,
             token_address: Readable::read(reader)?,
             token_chain: Readable::read(reader)?,
-            to: Readable::read(reader)?,
-            to_chain: Readable::read(reader)?,
-            fee: Readable::read(reader)?,
+            recipient: Readable::read(reader)?,
+            recipient_chain: Readable::read(reader)?,
+            norm_relayer_fee: Readable::read(reader)?,
         })
     }
 }
@@ -40,13 +42,12 @@ impl Writeable for Transfer {
         Self: Sized,
         W: io::Write,
     {
-        self.ty.write(writer)?;
-        self.amount.write(writer)?;
+        self.norm_amount.write(writer)?;
         self.token_address.write(writer)?;
         self.token_chain.write(writer)?;
-        self.to.write(writer)?;
-        self.to_chain.write(writer)?;
-        self.fee.write(writer)?;
+        self.recipient.write(writer)?;
+        self.recipient_chain.write(writer)?;
+        self.norm_relayer_fee.write(writer)?;
         Ok(())
     }
 
@@ -58,7 +59,7 @@ impl Writeable for Transfer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{payloads::token_bridge::Transfer, Vaa};
+    use crate::{payloads::token_bridge::TokenBridgeMessage, Vaa};
     use alloy_primitives::{U256, U64};
     use hex_literal::hex;
 
@@ -88,21 +89,38 @@ mod tests {
             vaa.body.double_digest(),
             hex!("2862e5873955ea104bb3e122831bdc43bbcb413da5b1123514640b950d038967")
         );
-        assert_eq!(
-            vaa.body.read_payload::<Transfer>().unwrap(),
-            Transfer {
-                ty: 1,
-                amount: U256::from(10000000000u64),
-                token_address: hex!(
-                    "165809739240a0ac03b98440fe8985548e3aa683cd0d4d9df5b5659669faa301"
-                )
-                .into(),
-                token_chain: 1,
-                to: hex!("000000000000000000000000c10820983f33456ce7beb3a046f5a83fa34f027d").into(),
-                to_chain: 2,
-                fee: U256::ZERO,
-            }
-        );
+
+        let msg = vaa.body.read_payload::<TokenBridgeMessage>().unwrap();
+
+        assert_eq!(msg.to_vec(), vaa.body.payload_bytes().unwrap());
+
+        if let TokenBridgeMessage::Transfer(transfer) = &msg {
+            assert_eq!(
+                transfer,
+                &Transfer {
+                    norm_amount: U256::from(10000000000u64),
+                    token_address: hex!(
+                        "165809739240a0ac03b98440fe8985548e3aa683cd0d4d9df5b5659669faa301"
+                    )
+                    .into(),
+                    token_chain: 1,
+                    recipient: hex!(
+                        "000000000000000000000000c10820983f33456ce7beb3a046f5a83fa34f027d"
+                    )
+                    .into(),
+                    recipient_chain: 2,
+                    norm_relayer_fee: U256::ZERO,
+                }
+            );
+        } else {
+            panic!("wrong message type");
+        }
+
+        // let msg_2 = vaa.body.read_payload::<Transfer>().unwrap();
+
+        let msg_2 = Transfer::read_payload(&mut vaa.body.payload_bytes().unwrap()).unwrap();
+
+        assert_eq!(TokenBridgeMessage::Transfer(msg_2), msg);
     }
 
     // https://github.com/wormhole-foundation/wormhole/blob/b09a644dac97fa8e037a16765728217ff3a1d057/clients/js/parse_tests/token-bridge-transfer-2.expected
@@ -129,19 +147,24 @@ mod tests {
             hex!("c90519b2bdfacac401d2d2c15a329d4e33e8ca15862685f0220ddc6074d7def5")
         );
 
-        let transfer = vaa.body.read_payload::<Transfer>().unwrap();
+        let msg = vaa.body.read_payload::<TokenBridgeMessage>().unwrap();
+        assert_eq!(msg.to_vec(), vaa.body.payload_bytes().unwrap());
 
-        assert_eq!(transfer.amount, U256::from(4100000000u64));
-        assert_eq!(
-            transfer.token_address,
-            hex!("069b8857feab8184fb687f634618c035dac439dc1aeb3b5598a0f00000000001")
-        );
-        assert_eq!(transfer.token_chain, 1);
-        assert_eq!(
-            transfer.to,
-            hex!("000000000000000000000000efd4aa8f954ebdea82b8757c029fc8475a45e9cd")
-        );
-        assert_eq!(transfer.to_chain, 2);
-        assert_eq!(transfer.fee, U256::ZERO);
+        if let TokenBridgeMessage::Transfer(transfer) = msg {
+            assert_eq!(transfer.norm_amount, U256::from(4100000000u64));
+            assert_eq!(
+                transfer.token_address,
+                hex!("069b8857feab8184fb687f634618c035dac439dc1aeb3b5598a0f00000000001")
+            );
+            assert_eq!(transfer.token_chain, 1);
+            assert_eq!(
+                transfer.recipient,
+                hex!("000000000000000000000000efd4aa8f954ebdea82b8757c029fc8475a45e9cd")
+            );
+            assert_eq!(transfer.recipient_chain, 2);
+            assert_eq!(transfer.norm_relayer_fee, U256::ZERO);
+        } else {
+            panic!("wrong message type");
+        }
     }
 }

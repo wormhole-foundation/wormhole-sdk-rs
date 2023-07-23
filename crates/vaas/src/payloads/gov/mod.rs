@@ -1,35 +1,42 @@
-use hex_literal::hex;
+pub mod core_bridge;
+pub use core_bridge::{
+    ContractUpgrade, GuardianSetUpdate, RecoverChainId, SetMessageFee, TransferFees,
+};
+
+pub mod token_bridge;
+pub use token_bridge::RegisterChain;
 
 use alloy_primitives::FixedBytes;
+use hex_literal::hex;
 
-use crate::{Payload, Readable, Writeable};
+use crate::{Readable, TypePrefixedPayload, Writeable};
 
 pub const GOVERNANCE_CHAIN: u16 = 1;
 pub const GOVERNANCE_EMITTER: FixedBytes<32> = FixedBytes(hex!(
     "0000000000000000000000000000000000000000000000000000000000000004"
 ));
 
-/// A.K.A. "Core".
-pub const CORE_BRIDGE_GOVERNANCE_MODULE: FixedBytes<32> = FixedBytes(hex!(
-    "00000000000000000000000000000000000000000000000000000000436f7265"
-));
-
-/// A.K.A. "TokenBridge".
-pub const TOKEN_BRIDGE_GOVERNANCE_MODULE: FixedBytes<32> = FixedBytes(hex!(
-    "000000000000000000000000000000000000000000546f6b656e427269646765"
-));
-
-impl Payload for GovernanceMessage {}
-
+/// The [specification] for Governance messages is the following:
+/// - module (32 bytes)
+/// - action (1 byte)
+/// - target chain (2 bytes)
+/// - decree (message payload encoding governance instruction).
+///
+/// The structs in this module deviate from the specification where the header only specifies the
+/// module for which smart contract the governance is relevant. What this SDK calls the payload
+/// starts with an action discriminator (1 byte) and the remaining bytes is the governance decree,
+/// which for all of these governance decrees will start with two bytes. Either these two bytes will
+/// be zeroed out (for global governance actions) or it will encode the chain ID relevant for the
+/// governance action.
+///
+/// [specification]: https://docs.wormhole.com/wormhole/explore-wormhole/vaa#governance
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct GovernanceHeader {
     pub module: FixedBytes<32>,
-    pub action: u8,
-    pub target: u16,
 }
 
 impl Readable for GovernanceHeader {
-    const SIZE: Option<usize> = Some(32 + 1 + 2);
+    const SIZE: Option<usize> = Some(32);
 
     fn read<R>(reader: &mut R) -> std::io::Result<Self>
     where
@@ -37,8 +44,6 @@ impl Readable for GovernanceHeader {
     {
         Ok(Self {
             module: FixedBytes::read(reader)?,
-            action: u8::read(reader)?,
-            target: u16::read(reader)?,
         })
     }
 }
@@ -48,10 +53,7 @@ impl Writeable for GovernanceHeader {
     where
         W: std::io::Write,
     {
-        self.module.write(writer)?;
-        self.action.write(writer)?;
-        self.target.write(writer)?;
-        Ok(())
+        self.module.write(writer)
     }
 
     fn written_size(&self) -> usize {
@@ -60,46 +62,40 @@ impl Writeable for GovernanceHeader {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct GovernanceMessage {
+pub struct GovernanceMessage<P> {
     pub header: GovernanceHeader,
-    pub decree: Vec<u8>,
+    pub decree: P,
 }
 
-impl Readable for GovernanceMessage {
-    const SIZE: Option<usize> = None;
-
-    fn read<R>(reader: &mut R) -> std::io::Result<Self>
-    where
-        R: std::io::Read,
-    {
-        Ok(Self {
-            header: GovernanceHeader::read(reader)?,
-            decree: {
-                let mut buf = Vec::new();
-                reader.read_to_end(&mut buf)?;
-                buf
-            },
-        })
-    }
+impl<P: TypePrefixedPayload> TypePrefixedPayload for GovernanceMessage<P> {
+    const TYPE: Option<u8> = None;
 }
 
-impl Writeable for GovernanceMessage {
+impl<P: TypePrefixedPayload> Writeable for GovernanceMessage<P> {
     fn write<W>(&self, writer: &mut W) -> std::io::Result<()>
     where
         W: std::io::Write,
     {
         self.header.write(writer)?;
-        writer.write_all(&self.decree)?;
-        Ok(())
+        self.decree.write_payload(writer)
     }
 
     fn written_size(&self) -> usize {
-        self.header.written_size() + self.decree.len()
+        self.header.written_size() + self.decree.payload_written_size()
     }
 }
 
-impl GovernanceMessage {
-    pub fn read_decree<R: Readable>(&self) -> Option<R> {
-        R::read(&mut self.decree.as_slice()).ok()
+impl<P: TypePrefixedPayload> Readable for GovernanceMessage<P> {
+    const SIZE: Option<usize> = None;
+
+    fn read<R>(reader: &mut R) -> std::io::Result<Self>
+    where
+        Self: Sized,
+        R: std::io::Read,
+    {
+        Ok(Self {
+            header: Readable::read(reader)?,
+            decree: TypePrefixedPayload::read_payload(reader)?,
+        })
     }
 }
