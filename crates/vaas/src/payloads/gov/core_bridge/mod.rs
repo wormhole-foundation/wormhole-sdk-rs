@@ -31,6 +31,10 @@ pub enum Decree {
     RecoverChainId(RecoverChainId),
 }
 
+impl TypePrefixedPayload for Decree {
+    const TYPE: Option<u8> = None;
+}
+
 impl Writeable for Decree {
     fn write<W>(&self, writer: &mut W) -> std::io::Result<()>
     where
