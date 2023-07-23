@@ -165,12 +165,10 @@ impl VaaBody {
 
     pub fn read_payload<P: TypePrefixedPayload>(&self) -> Option<P> {
         let mut p = self.payload_bytes()?;
-        let size = p.len();
         let deser = P::read_payload(&mut p).ok()?;
 
-        // if the payload is typed, the type byte must be added to the written
-        // size.
-        (deser.payload_written_size() == size).then_some(deser)
+        // Check that the payload is fully consumed. No extra bytes allowed.
+        p.is_empty().then_some(deser)
     }
 
     pub fn payload_as_message(&self) -> Option<payloads::Message> {
