@@ -6,12 +6,12 @@ use std::io;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Transfer {
-    norm_amount: U256,
-    token_address: FixedBytes<32>,
-    token_chain: u16,
-    recipient: FixedBytes<32>,
-    recipient_chain: u16,
-    norm_relayer_fee: U256,
+    pub norm_amount: U256,
+    pub token_address: FixedBytes<32>,
+    pub token_chain: u16,
+    pub recipient: FixedBytes<32>,
+    pub recipient_chain: u16,
+    pub norm_relayer_fee: U256,
 }
 
 impl TypePrefixedPayload for Transfer {
