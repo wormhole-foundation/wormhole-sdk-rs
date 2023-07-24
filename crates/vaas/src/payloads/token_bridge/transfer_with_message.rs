@@ -1,12 +1,12 @@
-use alloy_primitives::{FixedBytes, U256};
+use alloy_primitives::FixedBytes;
 
-use crate::{Readable, TypePrefixedPayload, Writeable};
+use crate::{EncodedAmount, Readable, TypePrefixedPayload, Writeable};
 
 use std::io;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TransferWithMessage {
-    pub norm_amount: U256,
+    pub norm_amount: EncodedAmount,
     pub token_address: FixedBytes<32>,
     pub token_chain: u16,
     pub redeemer: FixedBytes<32>,

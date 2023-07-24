@@ -15,6 +15,7 @@ hex-literal.workspace = true
 
 # anchor
 anchor-lang = { workspace = true, optional = true }
+bstr.workspace = true
 
 serde = {workspace = true, optional = true, features = ["derive"]}
 serde_json = { workspace = true, optional = true }

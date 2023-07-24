@@ -9,6 +9,7 @@ pub use payloads::{PayloadKind, TypePrefixedPayload};
 
 mod protocol;
 pub use protocol::{
+    encoded_types::{EncodedAmount, EncodedString},
     signature::GuardianSetSig,
     vaa::{Vaa, VaaBody, VaaHeader},
 };
