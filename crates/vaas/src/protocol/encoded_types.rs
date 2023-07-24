@@ -7,7 +7,7 @@ use std::io;
 const MAX_DECIMALS: u8 = 8;
 const TEN: U256 = U256::from_limbs([0, 0, 0, 10]);
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct EncodedAmount(pub U256);
 
 impl EncodedAmount {

@@ -11,11 +11,11 @@ repository.workspace = true
 
 [dependencies]
 alloy-primitives.workspace = true
+bstr.workspace = true
 hex-literal.workspace = true
 
 # anchor
 anchor-lang = { workspace = true, optional = true }
-bstr.workspace = true
 
 serde = {workspace = true, optional = true, features = ["derive"]}
 serde_json = { workspace = true, optional = true }

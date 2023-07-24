@@ -1,6 +1,7 @@
 use alloy_primitives::FixedBytes;
+use bstr::ByteSlice;
 
-use crate::{EncodedString, Readable, TypePrefixedPayload, Writeable};
+use crate::{Readable, TypePrefixedPayload, Writeable};
 
 use std::io;
 
@@ -10,17 +11,17 @@ pub struct Attestation {
     pub token_chain: u16,
     pub decimals: u8,
 
-    pub symbol: EncodedString,
-    pub name: EncodedString,
+    pub symbol: FixedBytes<32>,
+    pub name: FixedBytes<32>,
 }
 
 impl Attestation {
     pub fn symbol_string(&self) -> String {
-        self.symbol.clone().into()
+        fixed32_to_string(self.symbol)
     }
 
     pub fn name_string(&self) -> String {
-        self.name.clone().into()
+        fixed32_to_string(self.name)
     }
 }
 
@@ -65,12 +66,75 @@ impl Writeable for Attestation {
     }
 }
 
+fn fixed32_to_string(fixed: FixedBytes<32>) -> String {
+    let bytes = fixed.0.trim_end_with(|c| c == '\0');
+    String::from_utf8_lossy(bytes).into_owned()
+}
+
 #[cfg(test)]
 mod test {
     use alloy_primitives::{FixedBytes, U64};
     use hex_literal::hex;
 
-    use crate::{payloads::token_bridge::TokenBridgeMessage, Readable, Vaa, Writeable};
+    use crate::{
+        payloads::token_bridge::{attestation::fixed32_to_string, TokenBridgeMessage},
+        Readable, Vaa, Writeable,
+    };
+
+    #[test]
+    fn unicode_truncation_empty() {
+        let converted = FixedBytes::<32>::ZERO;
+        let recovered = fixed32_to_string(converted);
+        assert_eq!(recovered, String::new());
+    }
+
+    #[test]
+    fn unicode_truncation_small() {
+        let input = String::from("🔥");
+        let converted = {
+            let mut out = [0; 32];
+            out[..input.len()].copy_from_slice(input.as_bytes());
+            FixedBytes::<32>::from(out)
+        };
+        let recovered = fixed32_to_string(converted);
+        assert_eq!(recovered, String::from("🔥"));
+    }
+
+    #[test]
+    fn unicode_truncation_exact() {
+        let input = String::from("🔥🔥🔥🔥🔥🔥🔥🔥");
+        let converted = {
+            let mut out = [0; 32];
+            out.copy_from_slice(input.as_bytes());
+            FixedBytes::<32>::from(out)
+        };
+        let recovered = fixed32_to_string(converted);
+        assert_eq!(recovered, String::from("🔥🔥🔥🔥🔥🔥🔥🔥"));
+    }
+
+    #[test]
+    fn unicode_truncation_large() {
+        let input = String::from("🔥🔥🔥🔥🔥🔥🔥🔥🔥");
+        let converted = {
+            let mut out = [0; 32];
+            out.copy_from_slice(&input.as_bytes()[..32]);
+            FixedBytes::<32>::from(out)
+        };
+        let recovered = fixed32_to_string(converted);
+        assert_eq!(recovered, String::from("🔥🔥🔥🔥🔥🔥🔥🔥"));
+    }
+
+    #[test]
+    fn unicode_truncation_partial_overflow() {
+        let input = String::from("0000000000000000000000000000000🔥");
+        let converted = {
+            let mut out = [0; 32];
+            out.copy_from_slice(&input.as_bytes()[..32]);
+            FixedBytes::<32>::from(out)
+        };
+        let recovered = fixed32_to_string(converted);
+        assert_eq!(recovered, String::from("0000000000000000000000000000000�"));
+    }
 
     #[test]
     fn parse_token_bridge_attestation() {
