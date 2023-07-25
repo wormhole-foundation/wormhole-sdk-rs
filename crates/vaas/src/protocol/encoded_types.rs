@@ -5,7 +5,7 @@ use crate::{Readable, Writeable};
 use std::io;
 
 const MAX_DECIMALS: u8 = 8;
-const TEN: U256 = U256::from_limbs([0, 0, 0, 10]);
+const TEN: U256 = U256::from_limbs([10, 0, 0, 0]);
 
 /// This amount reflects the token transfer amount encoded in a Token Bridge
 /// message. These amounts are capped at 8 decimals. This means that any amount
