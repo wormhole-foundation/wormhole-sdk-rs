@@ -7,12 +7,21 @@ use std::io;
 const MAX_DECIMALS: u8 = 8;
 const TEN: U256 = U256::from_limbs([0, 0, 0, 10]);
 
+/// This amount reflects the token transfer amount encoded in a Token Bridge
+/// message. These amounts are capped at 8 decimals. This means that any amount
+/// of a coin whose metadata defines its decimals as some value greater than 8,
+/// the encoded amount will be normalized to eight decimals (which will lead to
+/// some residual amount after the transfer). For inbound transfers, this amount
+/// will be denormalized (scaled by the same decimal difference).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct EncodedAmount(pub U256);
 
 impl EncodedAmount {
     pub const ZERO: Self = Self(U256::ZERO);
 
+    /// Create a new encoded amount by normalizing a raw amount sdjusted by an
+    /// asset's decimals only if the decimals exceed the maximum allowed (8)
+    /// for encoding.
     pub fn from_raw(amount: U256, decimals: u8) -> Self {
         if decimals <= MAX_DECIMALS {
             Self(amount)
@@ -21,6 +30,8 @@ impl EncodedAmount {
         }
     }
 
+    /// Convert an encoded amount back to a raw amount by scaling it by its
+    /// decimals if the decimals eceed the maximum allowed (8) from encoding.
     pub fn to_raw(self, decimals: u8) -> U256 {
         if decimals <= MAX_DECIMALS {
             self.0
@@ -29,6 +40,9 @@ impl EncodedAmount {
         }
     }
 
+    /// Convert an encoded amount back to a raw amount by scaling it by its
+    /// decimals if the decimals eceed the maximum allowed (8) from encoding.
+    /// This method will return `None` if the raw amount overflows 32 bytes.
     pub fn checked_to_raw(self, decimals: u8) -> Option<U256> {
         if decimals <= MAX_DECIMALS {
             Some(self.0)
