@@ -4,7 +4,7 @@ use std::convert::Infallible;
 pub struct Vaa<'a> {
     pub(crate) span: &'a [u8],
     header: Header<'a>,
-    payload: Payload<'a>,
+    body: Body<'a>,
 }
 
 impl AsRef<[u8]> for Vaa<'_> {
@@ -38,19 +38,15 @@ impl<'a> Vaa<'a> {
         self.header.signatures()
     }
 
-    pub fn payload(&self) -> Payload<'a> {
-        self.payload
+    pub fn payload(&self) -> Body<'a> {
+        self.body
     }
 
     pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         let header = Header::parse(span)?;
-        let payload = Payload::parse(&span[header.span.len()..]);
+        let body = Body::parse(&span[header.span.len()..])?;
 
-        Ok(Self {
-            span,
-            header,
-            payload,
-        })
+        Ok(Self { span, header, body })
     }
 }
 
@@ -106,6 +102,66 @@ impl<'a> Header<'a> {
         // slice not long enough to contain all signatures
         if span.len() < expected_len {
             return Err("Insufficient  bytes to parse all signatures");
+        }
+
+        Ok(Self { span })
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct Body<'a> {
+    pub(crate) span: &'a [u8],
+}
+
+impl AsRef<[u8]> for Body<'_> {
+    fn as_ref(&self) -> &[u8] {
+        self.span
+    }
+}
+
+impl<'a> TryFrom<&'a [u8]> for Body<'a> {
+    type Error = &'static str;
+
+    fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
+        Self::parse(value)
+    }
+}
+
+impl<'a> Body<'a> {
+    pub fn timestamp(&self) -> u64 {
+        u64::from_be_bytes(self.span[0..8].try_into().unwrap())
+    }
+
+    pub fn nonce(&self) -> u32 {
+        u32::from_be_bytes(self.span[8..12].try_into().unwrap())
+    }
+
+    pub fn emitter_chain(&self) -> u16 {
+        u16::from_be_bytes(self.span[12..14].try_into().unwrap())
+    }
+
+    pub fn emitter_address(&self) -> [u8; 32] {
+        self.span[14..46].try_into().unwrap()
+    }
+
+    pub fn sequence(&self) -> u64 {
+        u64::from_be_bytes(self.span[46..54].try_into().unwrap())
+    }
+
+    pub fn consistency_level(&self) -> u8 {
+        self.span[54]
+    }
+
+    pub fn payload(&self) -> Payload<'a> {
+        if self.span.len() < 55 {
+            return Payload::parse(&[]);
+        }
+        Payload::parse(&self.span[55..])
+    }
+
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
+        if span.len() < 54 {
+            return Err("invalid length. Expected at least 54 bytes.");
         }
 
         Ok(Self { span })
