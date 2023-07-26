@@ -1,5 +1,6 @@
 [package]
 name = "wormhole-raw-vaas"
+description = "Zero-copy deserialization of Wormhole VAAs"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
