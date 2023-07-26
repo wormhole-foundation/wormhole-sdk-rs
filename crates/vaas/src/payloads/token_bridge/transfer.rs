@@ -1,17 +1,17 @@
-use alloy_primitives::{FixedBytes, U256};
+use alloy_primitives::FixedBytes;
 
-use crate::{Readable, TypePrefixedPayload, Writeable};
+use crate::{EncodedAmount, Readable, TypePrefixedPayload, Writeable};
 
 use std::io;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Transfer {
-    pub norm_amount: U256,
+    pub norm_amount: EncodedAmount,
     pub token_address: FixedBytes<32>,
     pub token_chain: u16,
     pub recipient: FixedBytes<32>,
     pub recipient_chain: u16,
-    pub norm_relayer_fee: U256,
+    pub norm_relayer_fee: EncodedAmount,
 }
 
 impl TypePrefixedPayload for Transfer {
@@ -60,7 +60,7 @@ impl Writeable for Transfer {
 mod tests {
     use super::*;
     use crate::{payloads::token_bridge::TokenBridgeMessage, Vaa};
-    use alloy_primitives::{U256, U64};
+    use alloy_primitives::U64;
     use hex_literal::hex;
 
     // https://github.com/wormhole-foundation/wormhole/blob/b09a644dac97fa8e037a16765728217ff3a1d057/clients/js/parse_tests/token-bridge-transfer-1.expected
@@ -98,7 +98,7 @@ mod tests {
             assert_eq!(
                 transfer,
                 &Transfer {
-                    norm_amount: U256::from(10000000000u64),
+                    norm_amount: EncodedAmount::from(10000000000u64),
                     token_address: hex!(
                         "165809739240a0ac03b98440fe8985548e3aa683cd0d4d9df5b5659669faa301"
                     )
@@ -109,7 +109,7 @@ mod tests {
                     )
                     .into(),
                     recipient_chain: 2,
-                    norm_relayer_fee: U256::ZERO,
+                    norm_relayer_fee: EncodedAmount::ZERO,
                 }
             );
         } else {
@@ -151,7 +151,7 @@ mod tests {
         assert_eq!(msg.to_vec(), vaa.body.payload_bytes().unwrap());
 
         if let TokenBridgeMessage::Transfer(transfer) = msg {
-            assert_eq!(transfer.norm_amount, U256::from(4100000000u64));
+            assert_eq!(transfer.norm_amount, EncodedAmount::from(4100000000u64));
             assert_eq!(
                 transfer.token_address,
                 hex!("069b8857feab8184fb687f634618c035dac439dc1aeb3b5598a0f00000000001")
@@ -162,7 +162,7 @@ mod tests {
                 hex!("000000000000000000000000efd4aa8f954ebdea82b8757c029fc8475a45e9cd")
             );
             assert_eq!(transfer.recipient_chain, 2);
-            assert_eq!(transfer.norm_relayer_fee, U256::ZERO);
+            assert_eq!(transfer.norm_relayer_fee, EncodedAmount::ZERO);
         } else {
             panic!("wrong message type");
         }

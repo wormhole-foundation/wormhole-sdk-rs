@@ -16,23 +16,11 @@ pub struct Attestation {
 
 impl Attestation {
     pub fn symbol_string(&self) -> String {
-        let bytes = self
-            .symbol
-            .rsplit(|b| *b == 0)
-            .next()
-            .unwrap_or(self.symbol.as_slice());
-
-        String::from_utf8_lossy(bytes).into_owned()
+        fixed32_to_string(self.symbol)
     }
 
     pub fn name_string(&self) -> String {
-        let bytes = self
-            .name
-            .rsplit(|b| *b == 0)
-            .next()
-            .unwrap_or(self.name.as_slice());
-
-        String::from_utf8_lossy(bytes).into_owned()
+        fixed32_to_string(self.name)
     }
 }
 
@@ -77,16 +65,83 @@ impl Writeable for Attestation {
     }
 }
 
+fn fixed32_to_string(fixed: FixedBytes<32>) -> String {
+    let idx = fixed
+        .iter()
+        .rposition(|x| *x != 0)
+        .map(|i| i + 1)
+        .unwrap_or_default();
+    String::from_utf8_lossy(&fixed[..idx]).into_owned()
+}
+
 #[cfg(test)]
 mod test {
     use alloy_primitives::{FixedBytes, U64};
     use hex_literal::hex;
 
-    use crate::{payloads::token_bridge::TokenBridgeMessage, Readable, Vaa, Writeable};
+    use crate::{
+        payloads::token_bridge::{attestation::fixed32_to_string, TokenBridgeMessage},
+        Readable, Vaa, Writeable,
+    };
+
+    #[test]
+    fn unicode_truncation_empty() {
+        let converted = FixedBytes::<32>::ZERO;
+        let recovered = fixed32_to_string(converted);
+        assert_eq!(recovered, String::new());
+    }
+
+    #[test]
+    fn unicode_truncation_small() {
+        let input = String::from("🔥");
+        let converted = {
+            let mut out = [0; 32];
+            out[..input.len()].copy_from_slice(input.as_bytes());
+            FixedBytes::<32>::from(out)
+        };
+        let recovered = fixed32_to_string(converted);
+        assert_eq!(recovered, String::from("🔥"));
+    }
+
+    #[test]
+    fn unicode_truncation_exact() {
+        let input = String::from("🔥🔥🔥🔥🔥🔥🔥🔥");
+        let converted = {
+            let mut out = [0; 32];
+            out.copy_from_slice(input.as_bytes());
+            FixedBytes::<32>::from(out)
+        };
+        let recovered = fixed32_to_string(converted);
+        assert_eq!(recovered, String::from("🔥🔥🔥🔥🔥🔥🔥🔥"));
+    }
+
+    #[test]
+    fn unicode_truncation_large() {
+        let input = String::from("🔥🔥🔥🔥🔥🔥🔥🔥🔥");
+        let converted = {
+            let mut out = [0; 32];
+            out.copy_from_slice(&input.as_bytes()[..32]);
+            FixedBytes::<32>::from(out)
+        };
+        let recovered = fixed32_to_string(converted);
+        assert_eq!(recovered, String::from("🔥🔥🔥🔥🔥🔥🔥🔥"));
+    }
+
+    #[test]
+    fn unicode_truncation_partial_overflow() {
+        let input = String::from("0000000000000000000000000000000🔥");
+        let converted = {
+            let mut out = [0; 32];
+            out.copy_from_slice(&input.as_bytes()[..32]);
+            FixedBytes::<32>::from(out)
+        };
+        let recovered = fixed32_to_string(converted);
+        assert_eq!(recovered, String::from("0000000000000000000000000000000�"));
+    }
 
     #[test]
     fn parse_token_bridge_attestation() {
-        let vaa = hex!("010000000001006cd3cdd701bbd878eb403f6505b5b797544eb9c486dadf79f0c445e9b8fa5cd474de1683e3a80f7e22dbfacd53b0ddc7b040ff6f974aafe7a6571c9355b8129b00000000007ce2ea3f000195f83a27e90c622a98c037353f271fd8f5f57b4dc18ebf5ff75a934724bd0491a43a1c0020f88a3e2002000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200021200000000000000000000000000000000000000000000000000000000574554480000000000000000000000000000000000000057726170706564206574686572");
+        let vaa = hex!("01000000000100ff7edcd3facb7dd6e06e0bd3e178cfddd775208f3e09f0b68bba981b812258716e6e5cd42c0ba413586df1e4066e29a1a41f9a49ae05a58f5fa93590d165abf100000000007ce2ea3f000195f83a27e90c622a98c037353f271fd8f5f57b4dc18ebf5ff75a934724bd0491a43a1c0020f88a3e2002000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200021257455448000000000000000000000000000000000000000000000000000000005772617070656420657468657200000000000000000000000000000000000000");
         let vaa = Vaa::read(&mut vaa.as_slice()).unwrap();
         assert_eq!(vaa.header.version, 1);
         assert_eq!(vaa.header.guardian_set_index, 0);
@@ -119,7 +174,7 @@ mod test {
             assert_eq!(
                 vaa.body.double_digest(),
                 FixedBytes(hex!(
-                    "4bb52b9a44ff6062ba5db1c47afc40c186f7485c8972b1c6261eb070ce0b1c6e"
+                    "6793c77cc9283df50ab5f2cdd688637d6ba935d4e6baabf46e07b83c55655461"
                 ))
             );
         } else {
