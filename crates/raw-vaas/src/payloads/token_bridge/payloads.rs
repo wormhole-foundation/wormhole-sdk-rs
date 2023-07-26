@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use crate::Payload;
 
+/// A token bridge payload, with type flag
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct TokenBridgePayload<'a> {
     span: &'a [u8],
@@ -43,6 +44,7 @@ impl<'a> TokenBridgePayload<'a> {
     }
 }
 
+/// The non-type-flag contents
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum TokenBridgeMessage<'a> {
     Transfer(Transfer<'a>),
@@ -112,6 +114,7 @@ impl<'a> TokenBridgeMessage<'a> {
     }
 }
 
+/// A token transfer payload
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Transfer<'a> {
     span: &'a [u8],
@@ -157,6 +160,7 @@ impl<'a> Transfer<'a> {
     }
 }
 
+/// An attestation payload
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Attestation<'a> {
     span: &'a [u8],
@@ -216,6 +220,7 @@ impl<'a> Attestation<'a> {
     }
 }
 
+/// A token transfer payload with a message
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct TransferWithMessage<'a> {
     span: &'a [u8],
