@@ -19,7 +19,7 @@ pub struct EncodedAmount(pub U256);
 
 impl From<[u8; 32]> for EncodedAmount {
     fn from(value: [u8; 32]) -> Self {
-        Self(alloy_primitives::Uint::from_be_bytes(value))
+        Self(Uint::from_be_bytes(value))
     }
 }
 
