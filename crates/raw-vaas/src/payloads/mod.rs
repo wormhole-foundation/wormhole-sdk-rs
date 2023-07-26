@@ -3,12 +3,56 @@ pub mod token_bridge;
 
 use crate::Payload;
 
+/// A governance Message with header and type flag.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct GovernanceMessage<'a> {
     span: &'a [u8],
 
     header: GovernanceHeader<'a>,
     decree: Payload<'a>,
+}
+
+impl AsRef<[u8]> for GovernanceMessage<'_> {
+    fn as_ref(&self) -> &[u8] {
+        self.span
+    }
+}
+
+impl<'a> TryFrom<&'a [u8]> for GovernanceMessage<'a> {
+    type Error = &'static str;
+
+    fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
+        Self::parse(value)
+    }
+}
+
+impl<'a> GovernanceMessage<'a> {
+    pub fn span(&self) -> &[u8] {
+        self.span
+    }
+
+    pub fn header(&self) -> GovernanceHeader<'a> {
+        self.header
+    }
+
+    pub fn decree(&self) -> Payload<'a> {
+        self.decree
+    }
+
+    pub fn parse(span: &'a [u8]) -> Result<GovernanceMessage<'a>, &'static str> {
+        if span.len() < 1 {
+            return Err("GovernanceMessage span too short. Need at least 1 byte");
+        }
+
+        let header = GovernanceHeader::parse(span)?;
+        let decree = Payload::parse(&span[32..]);
+
+        Ok(GovernanceMessage {
+            span,
+            header,
+            decree,
+        })
+    }
 }
 
 /// The [specification] for Governance messages is the following:

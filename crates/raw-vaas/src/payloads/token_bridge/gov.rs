@@ -1,5 +1,6 @@
 use crate::Payload;
 
+/// Token Bridge Governance payload, including type
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct TokenBridgeGovPayload<'a> {
     pub(crate) span: &'a [u8],
@@ -41,6 +42,7 @@ impl<'a> TokenBridgeGovPayload<'a> {
     }
 }
 
+/// The non-type-flag contents
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum TokenBridgeDecree<'a> {
     RegisterChain(RegisterChain<'a>),
@@ -85,6 +87,7 @@ impl<'a> TokenBridgeDecree<'a> {
     }
 }
 
+/// Register a new chain
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct RegisterChain<'a> {
     pub(crate) span: &'a [u8],
@@ -126,6 +129,7 @@ impl<'a> RegisterChain<'a> {
     }
 }
 
+/// Upgrade a contract
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct ContractUpgrade<'a> {
     span: &'a [u8],
@@ -167,6 +171,7 @@ impl<'a> ContractUpgrade<'a> {
     }
 }
 
+/// Recover a chain ID
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct RecoverChainId<'a> {
     span: &'a [u8],
