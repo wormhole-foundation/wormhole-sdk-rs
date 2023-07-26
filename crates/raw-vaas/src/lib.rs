@@ -33,12 +33,17 @@ mod test {
         let raw_vaa = Vaa::parse(vaa.as_slice()).unwrap();
         assert_eq!(raw_vaa.version(), 1);
         assert_eq!(raw_vaa.guardian_set_index(), 0);
-        assert_eq!(raw_vaa.signatures().len(), 1);
+        assert_eq!(raw_vaa.signature_count(), 1);
+
+        let body = raw_vaa.body();
+        assert_eq!(body.timestamp(), 0);
+        assert_eq!(body.nonce(), 2095245887);
+        assert_eq!(body.emitter_chain(), 1);
 
         let payload = TokenBridgePayload::try_from(raw_vaa.payload()).unwrap();
 
         let attestation = payload.message().attestation().unwrap();
 
-        assert_eq!(payload.message().transfer().amount(), 1000000000000000000);
+        assert_eq!(attest.token_address().to_string(),)
     }
 }
