@@ -16,8 +16,13 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                rust: ["stable", "beta", "nightly", "1.68"] # MSRV
-                flags: ["--no-default-features", "", "--all-features"]
+                rust: ["stable", "beta", "nightly"]
+                flags: [
+                    "",
+                    "--features \"read-write\"",
+                    "--features \"payloads\"",
+                    "--features \"serde\""
+                ]
         steps:
             - uses: actions/checkout@v3
             - uses: dtolnay/rust-toolchain@master
@@ -28,13 +33,22 @@ jobs:
               run: cargo test --workspace ${{ matrix.flags }}
 
     clippy:
-        name: clippy
+        name: clippy ${{ matrix.flags }}
         runs-on: ubuntu-latest
         timeout-minutes: 30
+        strategy:
+            fail-fast: false
+            matrix:
+                flags: [
+                    "",
+                    "--features \"read-write\"",
+                    "--features \"payloads\"",
+                    "--features \"serde\""
+                ]
         steps:
             - uses: actions/checkout@v3
             - uses: dtolnay/rust-toolchain@clippy
-            - run: cargo clippy --workspace --all-targets --all-features
+            - run: cargo clippy --workspace --all-targets ${{ matrix.flags }}
               env:
                   RUSTFLAGS: -Dwarnings
 
@@ -42,12 +56,21 @@ jobs:
         name: docs
         runs-on: ubuntu-latest
         timeout-minutes: 30
+        strategy:
+            fail-fast: false
+            matrix:
+                flags: [
+                    "",
+                    "--features \"read-write\"",
+                    "--features \"payloads\"",
+                    "--features \"serde\""
+                ]
         steps:
             - uses: actions/checkout@v3
             - uses: dtolnay/rust-toolchain@nightly
               with:
                   components: rust-docs
-            - run: cargo doc --workspace --all-features --no-deps --document-private-items
+            - run: cargo doc --workspace ${{ matrix.flags }} --no-deps --document-private-items
               env:
                   RUSTDOCFLAGS: "--cfg docsrs -D warnings"
 
@@ -61,3 +84,43 @@ jobs:
               with:
                   components: rustfmt
             - run: cargo fmt --all --check
+
+    test-anchor:
+        name: test ${{ matrix.rust }} -p wormhole-vaas --features "anchor" --no-default-features
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        strategy:
+            fail-fast: false
+            matrix:
+                rust: ["stable", "beta", "nightly"]
+        steps:
+            - uses: actions/checkout@v3
+            - uses: dtolnay/rust-toolchain@master
+              with:
+                  toolchain: ${{ matrix.rust }}
+            - uses: Swatinem/rust-cache@v2
+            - run: cargo test -p wormhole-vaas --features anchor --no-default-features
+
+    clippy-anchor:
+        name: clippy ${{ matrix.flags }} -p wormhole-vaas --features "anchor" --no-default-features
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        steps:
+            - uses: actions/checkout@v3
+            - uses: dtolnay/rust-toolchain@clippy
+            - run: cargo clippy -p wormhole-vaas --features anchor --no-default-features
+              env:
+                  RUSTFLAGS: -Dwarnings
+
+    docs-anchor:
+        name: doc -p wormhole-vaas --features "anchor" --no-default-features --no-deps --document-private-items
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        steps:
+            - uses: actions/checkout@v3
+            - uses: dtolnay/rust-toolchain@nightly
+              with:
+                  components: rust-docs
+            - run: cargo doc -p wormhole-vaas --features "anchor" --no-default-features --no-deps --document-private-items
+              env:
+                  RUSTDOCFLAGS: "--cfg docsrs -D warnings"
