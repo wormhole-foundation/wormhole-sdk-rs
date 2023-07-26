@@ -1,5 +1,5 @@
+use crate::aliases::{FixedBytes, U256};
 use crate::{Readable, TypePrefixedPayload, Writeable};
-use alloy_primitives::{FixedBytes, U256};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TransferFees {

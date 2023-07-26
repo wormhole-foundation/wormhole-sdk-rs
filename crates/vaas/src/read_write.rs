@@ -1,6 +1,6 @@
 use std::io;
 
-use alloy_primitives::{Address, FixedBytes, Uint};
+use crate::aliases::{FixedBytes, Uint};
 
 pub trait Readable {
     const SIZE: Option<usize>;
@@ -207,7 +207,8 @@ impl<const BITS: usize, const LIMBS: usize> Writeable for Uint<BITS, LIMBS> {
     }
 }
 
-impl Readable for Address {
+#[cfg(not(feature = "anchor"))]
+impl Readable for alloy_primitives::Address {
     const SIZE: Option<usize> = Some(20);
 
     fn read<R>(reader: &mut R) -> io::Result<Self>
@@ -219,7 +220,8 @@ impl Readable for Address {
     }
 }
 
-impl Writeable for Address {
+#[cfg(not(feature = "anchor"))]
+impl Writeable for alloy_primitives::Address {
     fn written_size(&self) -> usize {
         <Self as Readable>::SIZE.unwrap()
     }

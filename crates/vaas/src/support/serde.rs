@@ -3,7 +3,7 @@ use serde::{de, de::SeqAccess, Deserializer, Serialize, Serializer};
 
 pub(crate) mod fixed_bytes_as_array {
     use super::*;
-    use alloy_primitives::FixedBytes;
+    use crate::aliases::FixedBytes;
 
     pub fn serialize<S, const N: usize>(
         bytes: &FixedBytes<N>,

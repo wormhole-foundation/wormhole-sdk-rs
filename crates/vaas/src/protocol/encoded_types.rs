@@ -1,4 +1,4 @@
-use alloy_primitives::{ruint::UintTryFrom, U256, U8};
+use crate::aliases::{UintTryFrom, U256, U8};
 
 use crate::{Readable, Writeable};
 

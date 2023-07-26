@@ -1,5 +1,5 @@
+use crate::aliases::FixedBytes;
 use crate::{Readable, TypePrefixedPayload, Writeable};
-use alloy_primitives::FixedBytes;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RegisterChain {

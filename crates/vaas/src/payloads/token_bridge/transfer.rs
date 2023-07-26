@@ -1,4 +1,4 @@
-use alloy_primitives::FixedBytes;
+use crate::aliases::FixedBytes;
 
 use crate::{EncodedAmount, Readable, TypePrefixedPayload, Writeable};
 
@@ -59,8 +59,8 @@ impl Writeable for Transfer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::aliases::U64;
     use crate::{payloads::token_bridge::TokenBridgeMessage, Vaa};
-    use alloy_primitives::U64;
     use hex_literal::hex;
 
     // https://github.com/wormhole-foundation/wormhole/blob/b09a644dac97fa8e037a16765728217ff3a1d057/clients/js/parse_tests/token-bridge-transfer-1.expected
@@ -74,19 +74,19 @@ mod tests {
         assert_eq!(vaa.header.guardian_set_index, 0);
         assert_eq!(vaa.header.signatures.len(), 1);
         assert_eq!(vaa.header.signatures[0].guardian_set_index, 0);
-        assert_eq!(vaa.header.signatures[0].signature, hex!("7d204ad9447c4dfd6be62406e7f5a05eec96300da4048e70ff530cfb52aec44807e98194990710ff166eb1b2eac942d38bc1cd6018f93662a6578d985e87c8d001"));
+        assert_eq!(vaa.header.signatures[0].signature.0, hex!("7d204ad9447c4dfd6be62406e7f5a05eec96300da4048e70ff530cfb52aec44807e98194990710ff166eb1b2eac942d38bc1cd6018f93662a6578d985e87c8d001"));
 
         assert_eq!(vaa.body.timestamp, 1646343275);
         assert_eq!(vaa.body.nonce, 47293);
         assert_eq!(vaa.body.emitter_chain, 1);
         assert_eq!(
-            vaa.body.emitter_address,
+            vaa.body.emitter_address.0,
             hex!("c69a1b1a65dd336bf1df6a77afb501fc25db7fc0938cb08595a9ef473265cb4f")
         );
         assert_eq!(vaa.body.sequence, U64::from(3));
         assert_eq!(vaa.body.consistency_level, 32);
         assert_eq!(
-            vaa.body.double_digest(),
+            vaa.body.double_digest().0,
             hex!("2862e5873955ea104bb3e122831bdc43bbcb413da5b1123514640b950d038967")
         );
 
@@ -137,13 +137,13 @@ mod tests {
         assert_eq!(vaa.body.nonce, 62485);
         assert_eq!(vaa.body.emitter_chain, 1);
         assert_eq!(
-            vaa.body.emitter_address,
+            vaa.body.emitter_address.0,
             hex!("ec7372995d5cc8732397fb0ad35c0121e0eaa90d26f828a534cab54391b3a4f5")
         );
         assert_eq!(vaa.body.sequence, U64::from(110277));
         assert_eq!(vaa.body.consistency_level, 32);
         assert_eq!(
-            vaa.body.double_digest(),
+            vaa.body.double_digest().0,
             hex!("c90519b2bdfacac401d2d2c15a329d4e33e8ca15862685f0220ddc6074d7def5")
         );
 
@@ -153,12 +153,12 @@ mod tests {
         if let TokenBridgeMessage::Transfer(transfer) = msg {
             assert_eq!(transfer.norm_amount, EncodedAmount::from(4100000000u64));
             assert_eq!(
-                transfer.token_address,
+                transfer.token_address.0,
                 hex!("069b8857feab8184fb687f634618c035dac439dc1aeb3b5598a0f00000000001")
             );
             assert_eq!(transfer.token_chain, 1);
             assert_eq!(
-                transfer.recipient,
+                transfer.recipient.0,
                 hex!("000000000000000000000000efd4aa8f954ebdea82b8757c029fc8475a45e9cd")
             );
             assert_eq!(transfer.recipient_chain, 2);

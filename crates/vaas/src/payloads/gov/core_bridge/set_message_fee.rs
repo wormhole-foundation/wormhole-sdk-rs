@@ -1,5 +1,5 @@
+use crate::aliases::U256;
 use crate::{Readable, TypePrefixedPayload, Writeable};
-use alloy_primitives::U256;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SetMessageFee {

@@ -7,8 +7,8 @@ pub use recover_chain_id::RecoverChainId;
 mod contract_upgrade;
 pub use contract_upgrade::ContractUpgrade;
 
+use crate::aliases::FixedBytes;
 use crate::{Readable, TypePrefixedPayload, Writeable};
-use alloy_primitives::FixedBytes;
 use hex_literal::hex;
 
 /// A.K.A. "TokenBridge".

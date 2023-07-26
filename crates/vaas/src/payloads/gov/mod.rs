@@ -6,7 +6,7 @@ pub use core_bridge::{
 pub mod token_bridge;
 pub use token_bridge::RegisterChain;
 
-use alloy_primitives::FixedBytes;
+use crate::aliases::FixedBytes;
 use hex_literal::hex;
 
 use crate::{Readable, TypePrefixedPayload, Writeable};

@@ -13,8 +13,8 @@ pub use set_message_fee::SetMessageFee;
 mod transfer_fees;
 pub use transfer_fees::TransferFees;
 
+use crate::aliases::FixedBytes;
 use crate::{Readable, TypePrefixedPayload, Writeable};
-use alloy_primitives::FixedBytes;
 use hex_literal::hex;
 
 /// A.K.A. "Core".

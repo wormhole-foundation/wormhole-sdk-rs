@@ -1,4 +1,4 @@
-use alloy_primitives::FixedBytes;
+use crate::aliases::FixedBytes;
 
 use crate::{Readable, Writeable};
 

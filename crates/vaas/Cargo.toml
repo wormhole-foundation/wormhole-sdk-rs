@@ -10,11 +10,13 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-alloy-primitives.workspace = true
+alloy-primitives = { workspace = true, optional = true }
 hex-literal.workspace = true
 
 # anchor
 anchor-lang = { workspace = true, optional = true }
+derive_more = { version = "0.99", optional = true }
+ruint = { version = "1.8.0", optional = true }
 
 serde = {workspace = true, optional = true, features = ["derive"]}
 serde_json = { workspace = true, optional = true }
@@ -22,6 +24,8 @@ serde_json = { workspace = true, optional = true }
 [dev-dependencies]
 
 [features]
-default = []
-anchor = ["anchor-lang"]
+default = ["payloads"]
+read-write = []
+payloads = ["read-write", "dep:alloy-primitives"]
+anchor = ["anchor-lang", "dep:ruint", "dep:derive_more"]
 serde = ["dep:serde", "dep:serde_json", "alloy-primitives/serde"]

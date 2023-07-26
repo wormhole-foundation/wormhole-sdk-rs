@@ -1,4 +1,4 @@
-use alloy_primitives::FixedBytes;
+use crate::aliases::FixedBytes;
 
 use crate::{Readable, TypePrefixedPayload, Writeable};
 
@@ -76,7 +76,7 @@ fn fixed32_to_string(fixed: FixedBytes<32>) -> String {
 
 #[cfg(test)]
 mod test {
-    use alloy_primitives::{FixedBytes, U64};
+    use crate::aliases::{FixedBytes, U64};
     use hex_literal::hex;
 
     use crate::{
@@ -151,7 +151,7 @@ mod test {
         assert_eq!(vaa.body.nonce, 2095245887);
         assert_eq!(vaa.body.emitter_chain, 1);
         assert_eq!(
-            vaa.body.emitter_address,
+            vaa.body.emitter_address.0,
             hex!("95f83a27e90c622a98c037353f271fd8f5f57b4dc18ebf5ff75a934724bd0491")
         );
         assert_eq!(vaa.body.sequence, U64::from(11833801757748136510u64));
@@ -162,7 +162,7 @@ mod test {
 
         if let TokenBridgeMessage::Attestation(attestation) = msg {
             assert_eq!(
-                attestation.token_address,
+                attestation.token_address.0,
                 hex!("000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2")
             );
             assert_eq!(attestation.token_chain, 2);

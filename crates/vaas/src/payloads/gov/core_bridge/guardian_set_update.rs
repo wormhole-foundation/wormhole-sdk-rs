@@ -1,5 +1,5 @@
+use crate::aliases::{Address, FixedBytes};
 use crate::{Readable, TypePrefixedPayload, Writeable};
-use alloy_primitives::{Address, FixedBytes};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GuardianSetUpdate {

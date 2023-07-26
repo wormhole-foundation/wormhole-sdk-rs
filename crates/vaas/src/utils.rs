@@ -1,4 +1,4 @@
-use alloy_primitives::FixedBytes;
+use crate::aliases::FixedBytes;
 
 #[cfg(feature = "anchor")]
 fn anchor_keccak(buf: &[u8]) -> FixedBytes<32> {

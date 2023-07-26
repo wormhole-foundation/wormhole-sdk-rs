@@ -1,4 +1,4 @@
-use alloy_primitives::{FixedBytes, U64};
+use crate::aliases::{FixedBytes, U64};
 
 use crate::{
     payloads::{self, PayloadKind},
