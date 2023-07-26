@@ -5,12 +5,12 @@ fn anchor_keccak(buf: &[u8]) -> [u8; 32] {
 
 /// Simple keccak256 hash with configurable backend.
 #[inline]
-#[cfg(all(feature = "off-chain", not(feature = "anchor")))]
 pub fn keccak256(buf: impl AsRef<[u8]>) -> [u8; 32] {
-    #[cfg(all(feature = "off-chain", not(feature = "anchor")))]
+    #[cfg(all(feature = "off-chain", not(feature = "on-chain")))]
     return alloy_primitives::keccak256(buf).into();
 
     #[cfg(feature = "anchor")]
+    #[cfg_attr(feature = "anchor", allow(unreachable_code))]
     anchor_keccak(buf.as_ref())
 }
 
