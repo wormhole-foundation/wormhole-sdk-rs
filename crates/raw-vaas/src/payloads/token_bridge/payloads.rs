@@ -34,7 +34,7 @@ impl<'a> TokenBridgePayload<'a> {
     }
 
     pub fn parse(span: &'a [u8]) -> Result<TokenBridgePayload<'a>, &'static str> {
-        if span.len() < 1 {
+        if span.is_empty() {
             return Err("TokenBridgePayload span too short. Need at least 1 byte");
         }
 
@@ -97,7 +97,7 @@ impl<'a> TokenBridgeMessage<'a> {
     }
 
     pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
-        if span.len() < 1 {
+        if span.is_empty() {
             return Err("TokenBridgeMessage span too short. Need at least 1 byte");
         }
 
@@ -114,7 +114,7 @@ impl<'a> TokenBridgeMessage<'a> {
     }
 }
 
-/// A token transfer payload
+/// A token bridge transfer
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Transfer<'a> {
     span: &'a [u8],
@@ -160,7 +160,7 @@ impl<'a> Transfer<'a> {
     }
 }
 
-/// An attestation payload
+/// A token bridge attestation
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Attestation<'a> {
     span: &'a [u8],
@@ -220,7 +220,7 @@ impl<'a> Attestation<'a> {
     }
 }
 
-/// A token transfer payload with a message
+/// A token bridge transfer with message
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct TransferWithMessage<'a> {
     span: &'a [u8],

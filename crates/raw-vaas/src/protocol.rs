@@ -172,6 +172,20 @@ impl<'a> Body<'a> {
 
         Ok(Self { span })
     }
+
+    // available when either `off-chain` or `anchor` feature is enabled
+    #[inline]
+    #[cfg(any(feature = "off-chain", feature = "anchor"))]
+    pub fn digest(&self) -> [u8; 32] {
+        crate::utils::keccak256(self)
+    }
+
+    // available when either `off-chain` or `anchor` feature is enabled
+    #[inline]
+    #[cfg(any(feature = "off-chain", feature = "anchor"))]
+    pub fn double_digest(&self) -> [u8; 32] {
+        crate::utils::keccak256(self.digest())
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]

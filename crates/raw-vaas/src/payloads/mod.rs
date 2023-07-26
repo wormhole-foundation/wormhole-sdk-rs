@@ -40,7 +40,7 @@ impl<'a> GovernanceMessage<'a> {
     }
 
     pub fn parse(span: &'a [u8]) -> Result<GovernanceMessage<'a>, &'static str> {
-        if span.len() < 1 {
+        if span.is_empty() {
             return Err("GovernanceMessage span too short. Need at least 1 byte");
         }
 

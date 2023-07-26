@@ -32,7 +32,7 @@ impl<'a> TokenBridgeGovPayload<'a> {
     }
 
     pub fn parse(span: &[u8]) -> Result<TokenBridgeGovPayload, &'static str> {
-        if span.len() < 1 {
+        if span.is_empty() {
             return Err("TokenBridgeGovPayload span too short. Need at least 1 byte");
         }
 
@@ -70,7 +70,7 @@ impl<'a> TryFrom<&'a [u8]> for TokenBridgeDecree<'a> {
 
 impl<'a> TokenBridgeDecree<'a> {
     pub fn parse(span: &'a [u8]) -> Result<TokenBridgeDecree<'a>, &'static str> {
-        if span.len() < 1 {
+        if span.is_empty() {
             return Err("TokenBridgeDecree span too short. Need at least 1 byte");
         }
 

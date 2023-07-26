@@ -4,9 +4,10 @@ pub use protocol::{GuardianSetSig, Header, Payload, Vaa};
 mod payloads;
 pub use payloads::{core, token_bridge, GovernanceHeader, GovernanceMessage};
 
+pub mod utils;
+
 #[cfg(test)]
 mod test {
-
     use crate::{token_bridge::TokenBridgePayload, Vaa};
 
     #[test]
@@ -44,6 +45,9 @@ mod test {
 
         let attestation = payload.message().attestation().unwrap();
 
-        assert_eq!(attest.token_address().to_string(),)
+        assert_eq!(attestation.token_chain(), 2);
+        assert_eq!(attestation.decimals(), 18);
+        assert_eq!(attestation.symbol(), "WETH");
+        assert_eq!(attestation.name(), "Wrapped ether");
     }
 }

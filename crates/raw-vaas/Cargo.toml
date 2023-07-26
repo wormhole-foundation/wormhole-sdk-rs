@@ -12,7 +12,13 @@ repository.workspace = true
 
 [dependencies]
 ruint = { version = "=1.8.0", optional = true }
+anchor-lang = { workspace = true, optional = true }
+alloy-primitives = { workspace = true, optional = true }
 
 [features]
+default =["off-chain", "ruint"]
 ruint = ["dep:ruint"]
+off-chain = ["dep:alloy-primitives"]
+anchor = ["dep:anchor-lang"]
+
 
