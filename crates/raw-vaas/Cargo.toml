@@ -11,3 +11,7 @@ repository.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ruint = { version = "=1.8.0", optional = true }
+
+[features]
+ruint = ["dep:ruint"]

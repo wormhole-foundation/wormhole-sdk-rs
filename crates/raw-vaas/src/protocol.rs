@@ -1,6 +1,6 @@
 use std::convert::Infallible;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Vaa<'a> {
     pub(crate) span: &'a [u8],
     header: Header<'a>,
@@ -54,7 +54,7 @@ impl<'a> Vaa<'a> {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Header<'a> {
     pub(crate) span: &'a [u8],
 }
@@ -112,7 +112,7 @@ impl<'a> Header<'a> {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Payload<'a> {
     pub(crate) span: &'a [u8],
 }
@@ -137,7 +137,7 @@ impl<'a> TryFrom<&'a [u8]> for Payload<'a> {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct GuardianSetSig<'a> {
     pub(crate) span: &'a [u8],
 }
