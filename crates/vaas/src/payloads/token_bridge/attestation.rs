@@ -1,5 +1,4 @@
 use alloy_primitives::FixedBytes;
-use bstr::ByteSlice;
 
 use crate::{Readable, TypePrefixedPayload, Writeable};
 
@@ -67,8 +66,12 @@ impl Writeable for Attestation {
 }
 
 fn fixed32_to_string(fixed: FixedBytes<32>) -> String {
-    let bytes = fixed.0.trim_end_with(|c| c == '\0');
-    String::from_utf8_lossy(bytes).into_owned()
+    let idx = fixed
+        .iter()
+        .rposition(|x| *x != 0)
+        .map(|i| i + 1)
+        .unwrap_or_default();
+    String::from_utf8_lossy(&fixed[..idx]).into_owned()
 }
 
 #[cfg(test)]
