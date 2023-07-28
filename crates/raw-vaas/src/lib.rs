@@ -6,4 +6,4 @@ pub use payloads::{core, token_bridge, GovernanceHeader, GovernanceMessage};
 
 pub mod utils;
 
-mod support;
+pub mod support;
