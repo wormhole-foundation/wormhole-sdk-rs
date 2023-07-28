@@ -225,7 +225,7 @@ impl AsRef<[u8]> for GuardianSetSig<'_> {
 }
 
 impl<'a> GuardianSetSig<'a> {
-    pub fn guardian_set_index(&self) -> u8 {
+    pub fn guardian_index(&self) -> u8 {
         self.span[0]
     }
 
