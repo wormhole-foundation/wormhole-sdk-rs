@@ -253,8 +253,8 @@ impl<'a> TransferWithMessage<'a> {
         u16::from_be_bytes(self.span[64..66].try_into().unwrap())
     }
 
-    pub fn redeemer(&self) -> &[u8] {
-        &self.span[66..98]
+    pub fn redeemer(&self) -> [u8; 32] {
+        self.span[66..98].try_into().unwrap()
     }
 
     pub fn redeemer_chain(&self) -> u16 {
