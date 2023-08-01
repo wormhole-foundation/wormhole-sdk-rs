@@ -12,9 +12,6 @@ pub fn keccak256(buf: impl AsRef<[u8]>) -> [u8; 32] {
     #[cfg(feature = "anchor")]
     #[cfg_attr(feature = "anchor", allow(unreachable_code))]
     return anchor_keccak(buf.as_ref());
-
-    #[cfg(all(not(feature = "off-chain"), not(feature = "anchor")))]
-    compile_error!("Either `off-chain` or `anchor` feature must be enabled");
 }
 
 /// Return the number of guardians to reach quorum.
