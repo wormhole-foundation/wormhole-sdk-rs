@@ -5,7 +5,7 @@
 #[cfg(feature = "on-chain")]
 use ruint::Uint;
 
-#[cfg(feature = "off-chain")]
+#[cfg(all(feature = "off-chain", not(feature = "on-chain")))]
 use alloy_primitives::Uint;
 
 use crate::payloads::token_bridge::{Transfer, TransferWithMessage};
