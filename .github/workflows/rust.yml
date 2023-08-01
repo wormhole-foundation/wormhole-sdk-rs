@@ -17,7 +17,7 @@ jobs:
             fail-fast: false
             matrix:
                 rust: ["stable", "beta", "nightly", "1.68"] # MSRV
-                flags: ["--no-default-features", "", "--all-features"]
+                flags: ["--no-default-features --features=off-chain", "--no-default-features --features=anchor" "", "--all-features"]
         steps:
             - uses: actions/checkout@v3
             - uses: dtolnay/rust-toolchain@master
