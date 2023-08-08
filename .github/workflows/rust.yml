@@ -17,7 +17,7 @@ jobs:
             fail-fast: false
             matrix:
                 rust: ["stable", "beta", "nightly", "1.68"] # MSRV
-                flags: ["--no-default-features", "", "--all-features"]
+                flags: ["--no-default-features --features=off-chain", "--no-default-features --features=anchor", ""]
         steps:
             - uses: actions/checkout@v3
             - uses: dtolnay/rust-toolchain@master
@@ -34,7 +34,7 @@ jobs:
         steps:
             - uses: actions/checkout@v3
             - uses: dtolnay/rust-toolchain@clippy
-            - run: cargo clippy --workspace --all-targets --all-features
+            - run: cargo clippy --workspace --all-targets
               env:
                   RUSTFLAGS: -Dwarnings
 
@@ -47,7 +47,7 @@ jobs:
             - uses: dtolnay/rust-toolchain@nightly
               with:
                   components: rust-docs
-            - run: cargo doc --workspace --all-features --no-deps --document-private-items
+            - run: cargo doc --workspace --no-deps --document-private-items
               env:
                   RUSTDOCFLAGS: "--cfg docsrs -D warnings"
 
