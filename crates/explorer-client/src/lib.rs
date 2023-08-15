@@ -1,4 +1,4 @@
-mod endpoints;
+pub mod endpoints;
 pub use endpoints::{vaa::VaaRequest, ApiCall};
 
 mod error;
