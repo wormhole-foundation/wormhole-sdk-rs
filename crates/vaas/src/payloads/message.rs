@@ -8,13 +8,13 @@ impl crate::payloads::TypePrefixedPayload for Message {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Message {
-    pub(crate) version: u8,
-    pub(crate) message_ty: u8,
-    pub(crate) index: u64,
-    pub(crate) target_chain: u16,
-    pub(crate) target: Vec<u8>,
-    pub(crate) sender: Vec<u8>,
-    pub(crate) body: Vec<u8>,
+    pub version: u8,
+    pub message_ty: u8,
+    pub index: u64,
+    pub target_chain: u16,
+    pub target: Vec<u8>,
+    pub sender: Vec<u8>,
+    pub body: Vec<u8>,
 }
 
 impl Readable for Message {
