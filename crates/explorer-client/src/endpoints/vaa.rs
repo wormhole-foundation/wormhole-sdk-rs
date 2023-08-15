@@ -17,7 +17,7 @@ pub struct ExplorerVaaResp {
     timestamp: String,
     updated_at: String,
     indexed_at: String,
-    tx_hash: FixedBytes<32>,
+    tx_hash: Option<String>,
 }
 
 impl std::fmt::Debug for ExplorerVaaResp {
