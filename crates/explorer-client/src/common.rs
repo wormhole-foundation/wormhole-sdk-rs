@@ -14,11 +14,3 @@ impl Pagination {
         }
     }
 }
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
-pub struct Return<P> {
-    /// The returned data.
-    pub data: P,
-    /// Pagination information (if any)
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub pagination: Option<Pagination>,
-}

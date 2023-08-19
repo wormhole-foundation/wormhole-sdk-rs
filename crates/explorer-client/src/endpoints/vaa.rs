@@ -1,28 +1,37 @@
 use alloy_primitives::FixedBytes;
 use wormhole_vaas::{Readable, Vaa};
 
-use crate::{ApiCall, Result};
+use crate::{ApiCall, Pagination, Result};
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct ExplorerVaaResponse {
+    /// The returned data.
+    pub data: Vec<ExplorerVaa>,
+    /// Pagination information (if any)
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub pagination: Option<Pagination>,
+}
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ExplorerVaaResp {
-    sequence: u32,
-    id: String,
-    version: u8,
-    emitter_chain: u16,
-    emitter_addr: FixedBytes<32>,
-    emitter_native_addr: String,
+pub struct ExplorerVaa {
+    pub sequence: u32,
+    pub id: String,
+    pub version: u8,
+    pub emitter_chain: u16,
+    pub emitter_addr: FixedBytes<32>,
+    pub emitter_native_addr: String,
     #[serde(with = "base64")]
-    vaa: Vec<u8>,
-    timestamp: String,
-    updated_at: String,
-    indexed_at: String,
-    tx_hash: Option<String>,
+    pub vaa: Vec<u8>,
+    pub timestamp: String,
+    pub updated_at: String,
+    pub indexed_at: String,
+    pub tx_hash: Option<String>,
 }
 
-impl std::fmt::Debug for ExplorerVaaResp {
+impl std::fmt::Debug for ExplorerVaa {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ExplorerVaaResp")
+        f.debug_struct("ExplorerVaa")
             .field("sequence", &self.sequence)
             .field("id", &self.id)
             .field("version", &self.version)
@@ -38,7 +47,7 @@ impl std::fmt::Debug for ExplorerVaaResp {
     }
 }
 
-impl ExplorerVaaResp {
+impl ExplorerVaa {
     pub fn deser_vaa(&self) -> Result<Vaa> {
         Vaa::read(&mut self.vaa.as_slice()).map_err(Into::into)
     }
@@ -52,7 +61,7 @@ pub struct VaaRequest {
 }
 
 impl ApiCall for VaaRequest {
-    type Return = crate::returns::Return<Vec<ExplorerVaaResp>>;
+    type Return = ExplorerVaaResponse;
 
     fn endpoint(&self) -> String {
         let stem = "/api/v1/vaas";
