@@ -1,10 +1,11 @@
+pub mod tx;
 pub mod vaa;
 
 use std::{fmt::Debug, future::Future, pin::Pin};
 
 use tracing::Instrument;
 
-use crate::Client;
+use crate::{error::ApiError, Client};
 
 /// A call to the [Wormhole Explorer API].
 ///
@@ -48,9 +49,18 @@ pub trait ApiCall: Send + Sync + Debug {
                 tracing::debug!("sending request");
                 let resp = fut.await?;
                 let text = resp.text().await?;
-                tracing::debug!(text, "received response");
+                tracing::debug!("received response");
+                tracing::trace!(text);
 
-                serde_json::from_str::<Self::Return>(&text).map_err(Into::into)
+                let res = serde_json::from_str::<Self::Return>(&text).map_err(Into::into);
+                // if the res is  an error, try to deser the text as an API error object.
+                if res.is_err() {
+                    if let Ok(err) = serde_json::from_str::<ApiError>(&text) {
+                        return Err(err.into());
+                    }
+                    tracing::error!(text, "unknown error response from server");
+                }
+                res
             }
             .in_current_span(),
         )
