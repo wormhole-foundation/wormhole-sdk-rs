@@ -19,6 +19,9 @@ alloy-primitives = { workspace = true, optional = true }
 ruint = { version = "=1.8", default-features = false, optional = true }
 ruint-macro = { version = "=1.0.2", optional = true }
 
+[dev-dependencies]
+hex-literal.workspace = true
+
 [features]
 default =["off-chain", "ruint"]
 ruint = ["dep:ruint", "dep:ruint-macro"]
