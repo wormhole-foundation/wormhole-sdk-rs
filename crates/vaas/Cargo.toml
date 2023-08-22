@@ -15,9 +15,6 @@ wormhole-io = { workspace = true, features = ["alloy"] }
 alloy-primitives.workspace = true
 hex-literal.workspace = true
 
-# anchor
-anchor-lang = { workspace = true, optional = true }
-
 serde = {workspace = true, optional = true, features = ["derive"]}
 serde_json = { workspace = true, optional = true }
 
@@ -25,5 +22,4 @@ serde_json = { workspace = true, optional = true }
 
 [features]
 default = []
-anchor = ["anchor-lang"]
 serde = ["dep:serde", "dep:serde_json", "alloy-primitives/serde"]
