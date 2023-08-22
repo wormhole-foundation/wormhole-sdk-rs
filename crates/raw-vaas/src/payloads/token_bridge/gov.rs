@@ -29,8 +29,8 @@ impl<'a> TokenBridgeGovPayload<'a> {
         self.span
     }
 
-    pub fn decree(&self) -> &TokenBridgeDecree<'a> {
-        &self.decree
+    pub fn decree(&self) -> TokenBridgeDecree<'a> {
+        self.decree
     }
 
     pub fn parse(span: &[u8]) -> Result<TokenBridgeGovPayload, &'static str> {
@@ -269,9 +269,11 @@ mod test {
         assert_eq!(body.nonce(), 0);
         assert_eq!(body.emitter_chain(), 1);
 
-        let payload = TokenBridgeGovPayload::try_from(raw_vaa.payload()).unwrap();
+        let payload = TokenBridgeGovPayload::try_from(raw_vaa.payload())
+            .unwrap()
+            .decree();
 
-        let register_chain = payload.decree().register_chain().unwrap();
+        let register_chain = payload.register_chain().unwrap();
 
         assert_eq!(register_chain.foreign_chain(), 2);
         assert_eq!(
@@ -348,9 +350,11 @@ mod test {
         assert_eq!(body.nonce(), 0);
         assert_eq!(body.emitter_chain(), 1);
 
-        let payload = TokenBridgeGovPayload::try_from(raw_vaa.payload()).unwrap();
+        let payload = TokenBridgeGovPayload::try_from(raw_vaa.payload())
+            .unwrap()
+            .decree();
 
-        let contract_upgrade = payload.decree().contract_upgrade().unwrap();
+        let contract_upgrade = payload.contract_upgrade().unwrap();
 
         assert_eq!(contract_upgrade.chain(), 1);
         assert_eq!(

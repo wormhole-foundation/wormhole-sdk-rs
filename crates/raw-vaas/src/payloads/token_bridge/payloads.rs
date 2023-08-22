@@ -29,8 +29,8 @@ impl<'a> TokenBridgePayload<'a> {
         self.span
     }
 
-    pub fn message(&self) -> &TokenBridgeMessage<'a> {
-        &self.message
+    pub fn message(&self) -> TokenBridgeMessage<'a> {
+        self.message
     }
 
     pub fn parse(span: &'a [u8]) -> Result<TokenBridgePayload<'a>, &'static str> {
@@ -313,9 +313,11 @@ mod test {
         assert_eq!(body.nonce(), 2095245887);
         assert_eq!(body.emitter_chain(), 1);
 
-        let payload = TokenBridgePayload::try_from(raw_vaa.payload()).unwrap();
+        let payload = TokenBridgePayload::try_from(raw_vaa.payload())
+            .unwrap()
+            .message();
 
-        let attestation = payload.message().attestation().unwrap();
+        let attestation = payload.attestation().unwrap();
 
         assert_eq!(attestation.token_chain(), 2);
         assert_eq!(attestation.decimals(), 18);

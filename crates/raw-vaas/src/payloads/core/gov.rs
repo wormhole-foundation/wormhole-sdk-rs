@@ -29,8 +29,8 @@ impl<'a> CoreBridgeGovPayload<'a> {
         self.span
     }
 
-    pub fn decree(&self) -> &CoreBridgeDecree<'a> {
-        &self.decree
+    pub fn decree(&self) -> CoreBridgeDecree<'a> {
+        self.decree
     }
 
     pub fn parse(span: &[u8]) -> Result<CoreBridgeGovPayload, &'static str> {
@@ -392,9 +392,11 @@ mod test {
         assert_eq!(body.nonce(), 0);
         assert_eq!(body.emitter_chain(), 1);
 
-        let payload = CoreBridgeGovPayload::try_from(raw_vaa.payload()).unwrap();
+        let payload = CoreBridgeGovPayload::try_from(raw_vaa.payload())
+            .unwrap()
+            .decree();
 
-        let contract_upgrade = payload.decree().contract_upgrade().unwrap();
+        let contract_upgrade = payload.contract_upgrade().unwrap();
 
         assert_eq!(contract_upgrade.chain(), 1);
         assert_eq!(
@@ -472,9 +474,11 @@ mod test {
         assert_eq!(body.nonce(), 0);
         assert_eq!(body.emitter_chain(), 1);
 
-        let payload = CoreBridgeGovPayload::try_from(raw_vaa.payload()).unwrap();
+        let payload = CoreBridgeGovPayload::try_from(raw_vaa.payload())
+            .unwrap()
+            .decree();
 
-        let guardian_set_update = payload.decree().guardian_set_update().unwrap();
+        let guardian_set_update = payload.guardian_set_update().unwrap();
 
         assert_eq!(guardian_set_update.new_index(), 1);
         assert_eq!(guardian_set_update.num_guardians(), 2);
@@ -567,9 +571,11 @@ mod test {
         assert_eq!(body.nonce(), 0);
         assert_eq!(body.emitter_chain(), 1);
 
-        let payload = CoreBridgeGovPayload::try_from(raw_vaa.payload()).unwrap();
+        let payload = CoreBridgeGovPayload::try_from(raw_vaa.payload())
+            .unwrap()
+            .decree();
 
-        let set_message_fee = payload.decree().set_message_fee().unwrap();
+        let set_message_fee = payload.set_message_fee().unwrap();
 
         assert_eq!(set_message_fee.chain(), 1);
         assert_eq!(
@@ -648,9 +654,11 @@ mod test {
         assert_eq!(body.nonce(), 0);
         assert_eq!(body.emitter_chain(), 1);
 
-        let payload = CoreBridgeGovPayload::try_from(raw_vaa.payload()).unwrap();
+        let payload = CoreBridgeGovPayload::try_from(raw_vaa.payload())
+            .unwrap()
+            .decree();
 
-        let transfer_fees = payload.decree().transfer_fees().unwrap();
+        let transfer_fees = payload.transfer_fees().unwrap();
 
         assert_eq!(transfer_fees.chain(), 1);
         assert_eq!(
