@@ -1,5 +1,7 @@
 use crate::Payload;
 
+pub(crate) const GOV_MODULE: &[u8; 32] = b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00TokenBridge";
+
 /// Token Bridge Governance payload, including type
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct TokenBridgeGovPayload<'a> {
@@ -36,7 +38,11 @@ impl<'a> TokenBridgeGovPayload<'a> {
             return Err("TokenBridgeGovPayload span too short. Need at least 1 byte");
         }
 
-        let decree = TokenBridgeDecree::parse(span)?;
+        if &span[..32] != GOV_MODULE {
+            return Err("Invalid Token Bridge governance message");
+        }
+
+        let decree = TokenBridgeDecree::parse(&span[32..])?;
 
         Ok(TokenBridgeGovPayload { span, decree })
     }
@@ -69,7 +75,32 @@ impl<'a> TryFrom<&'a [u8]> for TokenBridgeDecree<'a> {
 }
 
 impl<'a> TokenBridgeDecree<'a> {
-    pub fn parse(span: &'a [u8]) -> Result<TokenBridgeDecree<'a>, &'static str> {
+    pub fn span(&self) -> &[u8] {
+        self.as_ref()
+    }
+
+    pub fn register_chain(&self) -> Option<&RegisterChain> {
+        match self {
+            TokenBridgeDecree::RegisterChain(inner) => Some(inner),
+            _ => None,
+        }
+    }
+
+    pub fn contract_upgrade(&self) -> Option<&ContractUpgrade> {
+        match self {
+            TokenBridgeDecree::ContractUpgrade(inner) => Some(inner),
+            _ => None,
+        }
+    }
+
+    pub fn recover_chain_id(&self) -> Option<&RecoverChainId> {
+        match self {
+            TokenBridgeDecree::RecoverChainId(inner) => Some(inner),
+            _ => None,
+        }
+    }
+
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.is_empty() {
             return Err("TokenBridgeDecree span too short. Need at least 1 byte");
         }
@@ -117,12 +148,8 @@ impl<'a> RegisterChain<'a> {
     }
 
     pub fn parse(span: &'a [u8]) -> Result<RegisterChain<'a>, &'static str> {
-        if span.len() < 36 {
+        if span.len() != 36 {
             return Err("RegisterChain span too short. Need exactly 36 bytes");
-        }
-
-        if span.len() > 36 {
-            return Err("RegisterChain span too long. Need exactly 36 bytes");
         }
 
         Ok(RegisterChain { span: &span[..36] })
@@ -151,23 +178,19 @@ impl<'a> TryFrom<&'a [u8]> for ContractUpgrade<'a> {
 
 impl<'a> ContractUpgrade<'a> {
     pub fn chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[2..4].try_into().unwrap())
+        u16::from_be_bytes(self.span[..2].try_into().unwrap())
     }
 
     pub fn implementation(&self) -> [u8; 32] {
-        self.span[4..36].try_into().unwrap()
+        self.span[2..34].try_into().unwrap()
     }
 
     pub fn parse(span: &'a [u8]) -> Result<ContractUpgrade<'a>, &'static str> {
-        if span.len() < 36 {
-            return Err("ContractUpgrade span too short. Need exactly 36 bytes");
+        if span.len() != 34 {
+            return Err("ContractUpgrade span too short. Need exactly 34 bytes");
         }
 
-        if span.len() > 36 {
-            return Err("ContractUpgrade span too long. Need exactly 36 bytes");
-        }
-
-        Ok(ContractUpgrade { span: &span[..36] })
+        Ok(ContractUpgrade { span: &span[..34] })
     }
 }
 
@@ -193,26 +216,146 @@ impl<'a> TryFrom<&'a [u8]> for RecoverChainId<'a> {
 
 impl<'a> RecoverChainId<'a> {
     pub fn recovered_chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[2..4].try_into().unwrap())
+        u16::from_be_bytes(self.span[..2].try_into().unwrap())
     }
 
     pub fn evm_chain_id(&self) -> [u8; 32] {
-        self.span[4..36].try_into().unwrap()
+        self.span[2..34].try_into().unwrap()
     }
 
     pub fn new_chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[36..38].try_into().unwrap())
+        u16::from_be_bytes(self.span[34..36].try_into().unwrap())
     }
 
     pub fn parse(span: &'a [u8]) -> Result<RecoverChainId<'a>, &'static str> {
-        if span.len() < 38 {
-            return Err("RecoverChainId span too short. Need exactly 38 bytes");
+        if span.len() != 36 {
+            return Err("RecoverChainId span too short. Need exactly 36 bytes");
         }
 
-        if span.len() > 38 {
-            return Err("RecoverChainId span too long. Need exactly 38 bytes");
-        }
+        Ok(RecoverChainId { span: &span[..36] })
+    }
+}
 
-        Ok(RecoverChainId { span: &span[..38] })
+#[cfg(test)]
+mod test {
+    use crate::{token_bridge::TokenBridgeGovPayload, Vaa};
+    use hex_literal::hex;
+
+    #[test]
+    fn register_chain() {
+        let vaa = hex!("010000000201002424a14044fa5538a5572c519e3b969a716fdf09d9129db2139ba1c3dca9767a53474fb37928e0a0d71c075d8e430d606347a95d4296bade3f6c52e64c4bf7d30100bc614e000000000001000000000000000000000000000000000000000000000000000000000000000400000000001eab9001000000000000000000000000000000000000000000546f6b656e42726964676501000000020000000000000000000000003ee18b2214aff97000d974cf647e7c347e8fa585");
+
+        let raw_vaa = Vaa::parse(vaa.as_slice()).unwrap();
+        assert_eq!(raw_vaa.version(), 1);
+        assert_eq!(raw_vaa.guardian_set_index(), 2);
+        assert_eq!(raw_vaa.signature_count(), 1);
+
+        let body = raw_vaa.body();
+        assert_eq!(body.timestamp(), 12345678);
+        assert_eq!(body.nonce(), 0);
+        assert_eq!(body.emitter_chain(), 1);
+
+        let payload = TokenBridgeGovPayload::try_from(raw_vaa.payload())
+            .unwrap()
+            .decree();
+
+        let register_chain = payload.register_chain().unwrap();
+
+        assert_eq!(register_chain.foreign_chain(), 2);
+        assert_eq!(
+            register_chain.foreign_emitter(),
+            hex!("0000000000000000000000003ee18b2214aff97000d974cf647e7c347e8fa585")
+        );
+    }
+
+    #[test]
+    fn invalid_register_chain() {
+        let vaa = hex!("010000000201002424a14044fa5538a5572c519e3b969a716fdf09d9129db2139ba1c3dca9767a53474fb37928e0a0d71c075d8e430d606347a95d4296bade3f6c52e64c4bf7d30100bc614e000000000001000000000000000000000000000000000000000000000000000000000000000400000000001eab9001000000000000000000000000000000000000000000546f6b656e42726964676501000000020000000000000000000000003ee18b2214aff97000d974cf647e7c347e8fa58569");
+
+        let raw_vaa = Vaa::parse(vaa.as_slice()).unwrap();
+        assert_eq!(raw_vaa.version(), 1);
+        assert_eq!(raw_vaa.guardian_set_index(), 2);
+        assert_eq!(raw_vaa.signature_count(), 1);
+
+        let body = raw_vaa.body();
+        assert_eq!(body.timestamp(), 12345678);
+        assert_eq!(body.nonce(), 0);
+        assert_eq!(body.emitter_chain(), 1);
+
+        let err = TokenBridgeGovPayload::try_from(raw_vaa.payload())
+            .err()
+            .unwrap();
+        assert_eq!(err, "RegisterChain span too short. Need exactly 36 bytes");
+    }
+
+    #[test]
+    fn contract_upgrade() {
+        let vaa = hex!("01000000020100b57c401c985d2e4301685d42a86d1372117a27de8b0c12532d869a7d879599c675f11dae5c6b47e429c9802516fbf88f51bcb857c1a233ae24763f6a03df80410100bc614e0000000000010000000000000000000000000000000000000000000000000000000000000004000000000020035001000000000000000000000000000000000000000000546f6b656e427269646765020001485edcc94dd21decbbac52610a008c1bc5c8e4859c4504fff7433ad876cb1263");
+
+        let raw_vaa = Vaa::parse(vaa.as_slice()).unwrap();
+        assert_eq!(raw_vaa.version(), 1);
+        assert_eq!(raw_vaa.guardian_set_index(), 2);
+        assert_eq!(raw_vaa.signature_count(), 1);
+
+        let body = raw_vaa.body();
+        assert_eq!(body.timestamp(), 12345678);
+        assert_eq!(body.nonce(), 0);
+        assert_eq!(body.emitter_chain(), 1);
+
+        let payload = TokenBridgeGovPayload::try_from(raw_vaa.payload())
+            .unwrap()
+            .decree();
+
+        let contract_upgrade = payload.contract_upgrade().unwrap();
+
+        assert_eq!(contract_upgrade.chain(), 1);
+        assert_eq!(
+            contract_upgrade.implementation(),
+            hex!("485edcc94dd21decbbac52610a008c1bc5c8e4859c4504fff7433ad876cb1263")
+        );
+    }
+
+    #[test]
+    fn invalid_contract_upgrade() {
+        let vaa = hex!("01000000020100b57c401c985d2e4301685d42a86d1372117a27de8b0c12532d869a7d879599c675f11dae5c6b47e429c9802516fbf88f51bcb857c1a233ae24763f6a03df80410100bc614e0000000000010000000000000000000000000000000000000000000000000000000000000004000000000020035001000000000000000000000000000000000000000000546f6b656e427269646765020001485edcc94dd21decbbac52610a008c1bc5c8e4859c4504fff7433ad876cb126369");
+
+        let raw_vaa = Vaa::parse(vaa.as_slice()).unwrap();
+        assert_eq!(raw_vaa.version(), 1);
+        assert_eq!(raw_vaa.guardian_set_index(), 2);
+        assert_eq!(raw_vaa.signature_count(), 1);
+
+        let body = raw_vaa.body();
+        assert_eq!(body.timestamp(), 12345678);
+        assert_eq!(body.nonce(), 0);
+        assert_eq!(body.emitter_chain(), 1);
+
+        let err = TokenBridgeGovPayload::try_from(raw_vaa.payload())
+            .err()
+            .unwrap();
+        assert_eq!(err, "ContractUpgrade span too short. Need exactly 34 bytes");
+    }
+
+    #[test]
+    fn invalid_token_bridge_gov() {
+        let vaa = hex!("0100000002010005e1bb5901b0a78951ecec430994383f9ad0e0f767c21a67a826078bf11ece0c39381fa81bfa20a6ed2ea2362a6c0d9459778f5e8bf8e949a58e23b59718f5690000bc614e0000000000010000000000000000000000000000000000000000000000000000000000000004000000000010c1110100000000000000000000000000000000000000000000000000000000436f7265010001dd33db6e624f8354d2168a9b3e04a6e04602d2f658edaa11403dc1b61b46efc5");
+
+        let raw_vaa = Vaa::parse(vaa.as_slice()).unwrap();
+        assert_eq!(raw_vaa.version(), 1);
+        assert_eq!(raw_vaa.guardian_set_index(), 2);
+        assert_eq!(raw_vaa.signature_count(), 1);
+
+        let body = raw_vaa.body();
+        assert_eq!(body.timestamp(), 12345678);
+        assert_eq!(body.nonce(), 0);
+        assert_eq!(body.emitter_chain(), 1);
+
+        let payload = raw_vaa.payload();
+        let module = &payload.as_ref()[..32];
+        assert_ne!(module, super::GOV_MODULE);
+
+        let err = TokenBridgeGovPayload::try_from(raw_vaa.payload())
+            .err()
+            .unwrap();
+        assert_eq!(err, "Invalid Token Bridge governance message");
     }
 }
