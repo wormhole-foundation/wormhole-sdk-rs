@@ -1,7 +1,5 @@
 use std::io;
 
-use alloy_primitives::{Address, FixedBytes, Uint};
-
 pub trait Readable {
     const SIZE: Option<usize>;
 
@@ -154,7 +152,8 @@ impl<const N: usize> Writeable for [u8; N] {
     }
 }
 
-impl<const N: usize> Readable for FixedBytes<N> {
+#[cfg(feature = "alloy")]
+impl<const N: usize> Readable for alloy_primitives::FixedBytes<N> {
     const SIZE: Option<usize> = Some(N);
 
     fn read<R>(reader: &mut R) -> io::Result<Self>
@@ -166,7 +165,8 @@ impl<const N: usize> Readable for FixedBytes<N> {
     }
 }
 
-impl<const N: usize> Writeable for FixedBytes<N> {
+#[cfg(feature = "alloy")]
+impl<const N: usize> Writeable for alloy_primitives::FixedBytes<N> {
     fn written_size(&self) -> usize {
         <Self as Readable>::SIZE.unwrap()
     }
@@ -179,7 +179,8 @@ impl<const N: usize> Writeable for FixedBytes<N> {
     }
 }
 
-impl<const BITS: usize, const LIMBS: usize> Readable for Uint<BITS, LIMBS> {
+#[cfg(feature = "alloy")]
+impl<const BITS: usize, const LIMBS: usize> Readable for alloy_primitives::Uint<BITS, LIMBS> {
     const SIZE: Option<usize> = { Some(BITS * 8) };
 
     fn read<R>(reader: &mut R) -> io::Result<Self>
@@ -187,14 +188,15 @@ impl<const BITS: usize, const LIMBS: usize> Readable for Uint<BITS, LIMBS> {
         Self: Sized,
         R: io::Read,
     {
-        let mut buf = Uint::<BITS, LIMBS>::default().to_be_bytes_vec();
+        let mut buf = alloy_primitives::Uint::<BITS, LIMBS>::default().to_be_bytes_vec();
         reader.read_exact(buf.as_mut_slice())?;
 
-        Ok(Uint::try_from_be_slice(buf.as_slice()).unwrap())
+        Ok(alloy_primitives::Uint::try_from_be_slice(buf.as_slice()).unwrap())
     }
 }
 
-impl<const BITS: usize, const LIMBS: usize> Writeable for Uint<BITS, LIMBS> {
+#[cfg(feature = "alloy")]
+impl<const BITS: usize, const LIMBS: usize> Writeable for alloy_primitives::Uint<BITS, LIMBS> {
     fn written_size(&self) -> usize {
         <Self as Readable>::SIZE.unwrap()
     }
@@ -207,7 +209,8 @@ impl<const BITS: usize, const LIMBS: usize> Writeable for Uint<BITS, LIMBS> {
     }
 }
 
-impl Readable for Address {
+#[cfg(feature = "alloy")]
+impl Readable for alloy_primitives::Address {
     const SIZE: Option<usize> = Some(20);
 
     fn read<R>(reader: &mut R) -> io::Result<Self>
@@ -215,11 +218,12 @@ impl Readable for Address {
         Self: Sized,
         R: io::Read,
     {
-        FixedBytes::<20>::read(reader).map(Self)
+        alloy_primitives::FixedBytes::<20>::read(reader).map(Self)
     }
 }
 
-impl Writeable for Address {
+#[cfg(feature = "alloy")]
+impl Writeable for alloy_primitives::Address {
     fn written_size(&self) -> usize {
         <Self as Readable>::SIZE.unwrap()
     }

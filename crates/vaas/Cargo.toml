@@ -10,6 +10,8 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+wormhole-io = { workspace = true, features = ["alloy"] }
+
 alloy-primitives.workspace = true
 hex-literal.workspace = true
 

@@ -1,5 +1,4 @@
-mod read_write;
-pub use read_write::{Readable, Writeable};
+pub use wormhole_io::{Readable, Writeable};
 
 pub mod utils;
 pub use utils::{keccak256, quorum};
