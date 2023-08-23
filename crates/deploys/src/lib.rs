@@ -1,10 +1,7 @@
 pub mod chain_id;
 pub mod deploys;
 
-use std::collections::HashMap;
-
 use chain_id::ChainId;
-use once_cell::sync::Lazy;
 
 /// Enum representing the VM used by a chain.
 pub enum Vm {
