@@ -3,7 +3,7 @@ members = [
     "crates/io",
     "crates/vaas",
     "crates/explorer-client",
-    "crates/deploys",   
+    "crates/deploys",
 ]
 resolver = "2"
 
