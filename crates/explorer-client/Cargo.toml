@@ -12,6 +12,7 @@ repository.workspace = true
 
 [dependencies]
 alloy-primitives.workspace = true
+
 async-trait = "0.1.72"
 base64 = "0.21.2"
 hex = "0.4.3"

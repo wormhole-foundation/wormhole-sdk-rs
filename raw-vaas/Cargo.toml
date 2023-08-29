@@ -1,0 +1,33 @@
+[package]
+name = "wormhole-raw-vaas"
+description = "Zero-copy deserialization of Wormhole VAAs"
+
+version = "0.1.1"
+edition = "2021"
+authors = ["Wormhole Contributors"]
+license = "Apache-2.0"
+homepage = "https://github.com/wormhole-foundation/wormhole-sdk-rs"
+repository = "https://github.com/wormhole-foundation/wormhole-sdk-rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anchor-lang = { version = "0.28.0", optional = true }
+
+alloy-primitives = { version = "0.2.0", optional = true }
+
+ruint = { version = "=1.8", default-features = false, optional = true }
+ruint-macro = { version = "=1.0.2" }
+
+[dev-dependencies]
+hex-literal = "0.4.1"
+
+[features]
+default =["off-chain", "ruint"]
+ruint = ["dep:ruint"]
+off-chain = ["dep:alloy-primitives", "ruint"]
+on-chain = []
+anchor = ["dep:anchor-lang", "ruint", "on-chain"]
+
+# prevents this crate from seeing itself as a workspace member
+[workspace]

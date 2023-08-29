@@ -1,5 +1,10 @@
 [workspace]
-members = ["crates/*"]
+members = [
+    "crates/io",
+    "crates/vaas",
+    "crates/explorer-client",
+    "crates/deploys",   
+]
 resolver = "2"
 
 [workspace.package]
@@ -15,9 +20,9 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [workspace.dependencies]
-alloy-primitives = "0.2.0"
+alloy-primitives = "0.3.0"
+
 hex-literal = "0.4.1"
-anchor-lang = "0.28.0"
 
 serde = "1.0.171"
 serde_json = "1.0.103"
