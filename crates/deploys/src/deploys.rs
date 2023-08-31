@@ -4,8 +4,8 @@ use once_cell::sync::Lazy;
 
 use crate::CoreDeployment;
 
-pub static MAINNET: &'static [&Lazy<CoreDeployment>] = &[&ETHEREUM];
-pub static TESTNET: &'static [&Lazy<CoreDeployment>] = &[&GOERLI, &SEPOLIA];
+pub static MAINNET: &[&Lazy<CoreDeployment>] = &[&ETHEREUM];
+pub static TESTNET: &[&Lazy<CoreDeployment>] = &[&GOERLI, &SEPOLIA];
 
 pub static MAINNET_BY_ID: Lazy<HashMap<u16, &'static CoreDeployment>> = Lazy::new(|| {
     let mut mainnet: HashMap<u16, &'static CoreDeployment> = Default::default();
@@ -20,7 +20,7 @@ pub static MAINNET_BY_ID: Lazy<HashMap<u16, &'static CoreDeployment>> = Lazy::ne
 pub static MAINNET_BY_NAME: Lazy<HashMap<String, &'static CoreDeployment>> = Lazy::new(|| {
     let mut mainnet: HashMap<String, &'static CoreDeployment> = Default::default();
     for net in MAINNET {
-        mainnet.insert(net.name.to_owned(), &*net);
+        mainnet.insert(net.name.to_owned(), *net);
         mainnet.insert(net.name.to_ascii_lowercase(), &*ETHEREUM);
     }
 
@@ -41,7 +41,7 @@ pub static TESTNET_BY_ID: Lazy<HashMap<u16, &'static CoreDeployment>> = Lazy::ne
 pub static TESTNET_BY_NAME: Lazy<HashMap<String, &'static CoreDeployment>> = Lazy::new(|| {
     let mut mainnet: HashMap<String, &'static CoreDeployment> = Default::default();
     for net in MAINNET {
-        mainnet.insert(net.name.to_owned(), &*net);
+        mainnet.insert(net.name.to_owned(), *net);
         mainnet.insert(net.name.to_ascii_lowercase(), &*ETHEREUM);
     }
 
