@@ -1,7 +1,7 @@
 pub mod chain_id;
 pub mod deploys;
 
-use chain_id::ChainId;
+pub use chain_id::{ChainId, KnownChainIds};
 
 /// Enum representing the VM used by a chain.
 pub enum Vm {
