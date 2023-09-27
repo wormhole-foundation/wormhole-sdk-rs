@@ -23,8 +23,12 @@ impl From<[u8; 32]> for EncodedAmount {
     }
 }
 
-fn pow10(power: u8) -> U256 {
-    TEN.pow(U256::from(Uint::<8, 1>::from(power)))
+fn wrapping_pow10(power: u8) -> U256 {
+    TEN.wrapping_pow(U256::from(Uint::<8, 1>::from(power)))
+}
+
+fn checked_pow10(power: u8) -> Option<U256> {
+    TEN.checked_pow(U256::from(Uint::<8, 1>::from(power)))
 }
 
 impl EncodedAmount {
@@ -37,7 +41,7 @@ impl EncodedAmount {
         if decimals <= MAX_DECIMALS {
             Self(amount)
         } else {
-            Self(amount.wrapping_div(pow10(decimals - MAX_DECIMALS)))
+            Self(amount.wrapping_div(wrapping_pow10(decimals - MAX_DECIMALS)))
         }
     }
 
@@ -47,7 +51,7 @@ impl EncodedAmount {
         if decimals <= MAX_DECIMALS {
             self.0
         } else {
-            self.0.wrapping_mul(pow10(decimals - MAX_DECIMALS))
+            self.0.wrapping_mul(wrapping_pow10(decimals - MAX_DECIMALS))
         }
     }
 
@@ -58,7 +62,7 @@ impl EncodedAmount {
         if decimals <= MAX_DECIMALS {
             Some(self.0)
         } else {
-            self.0.checked_mul(pow10(decimals - MAX_DECIMALS))
+            checked_pow10(decimals - MAX_DECIMALS).and_then(|scale| self.0.checked_mul(scale))
         }
     }
 }
