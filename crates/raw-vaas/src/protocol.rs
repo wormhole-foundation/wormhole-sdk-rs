@@ -173,16 +173,16 @@ impl<'a> Body<'a> {
         Ok(Self { span })
     }
 
-    // available when either `off-chain` or `anchor` feature is enabled
+    // available when `off-chain` feature is enabled
     #[inline]
-    #[cfg(any(feature = "off-chain", feature = "anchor"))]
+    #[cfg(feature = "off-chain")]
     pub fn digest(&self) -> [u8; 32] {
         crate::utils::keccak256(self)
     }
 
-    // available when either `off-chain` or `anchor` feature is enabled
+    // available when `off-chain` feature is enabled
     #[inline]
-    #[cfg(any(feature = "off-chain", feature = "anchor"))]
+    #[cfg(feature = "off-chain")]
     pub fn double_digest(&self) -> [u8; 32] {
         crate::utils::keccak256(self.digest())
     }

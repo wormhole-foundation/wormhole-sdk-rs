@@ -9,4 +9,6 @@ pub mod utils;
 pub mod support;
 
 #[cfg(all(feature = "off-chain", feature = "on-chain"))]
-compile_error!("Only one of `off-chain` or `on-chain` can be enabled. N.b. `anchor` and other runtime features enable `on-chain`, and `off-chain` is on by default.");
+compile_error!(
+    "Only one of `off-chain` or `on-chain` can be enabled. N.b. `off-chain` is on by default."
+);

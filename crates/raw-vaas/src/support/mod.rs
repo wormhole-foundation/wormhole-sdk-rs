@@ -2,10 +2,10 @@
 
 //! Provides support for EITHER ruint@1.8.0 OR alloy_primitives.
 
-#[cfg(feature = "on-chain")]
+#[cfg(feature = "ruint")]
 use ruint::Uint;
 
-#[cfg(all(feature = "off-chain", not(feature = "on-chain")))]
+#[cfg(not(feature = "ruint"))]
 use alloy_primitives::Uint;
 
 use crate::payloads::token_bridge::{Transfer, TransferWithMessage};
