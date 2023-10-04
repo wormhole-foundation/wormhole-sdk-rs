@@ -1,8 +1,10 @@
 pub mod tx;
 pub mod vaa;
+pub mod vaa_by_tx;
 
 use std::{fmt::Debug, future::Future, pin::Pin};
 
+use reqwest::Url;
 use tracing::Instrument;
 
 use crate::{error::ApiError, Client};
@@ -22,11 +24,14 @@ pub trait ApiCall: Send + Sync + Debug {
     /// ```
     type Return: serde::de::DeserializeOwned;
 
-    /// Return the endpoint to which this request should be sent.
+    /// Append the endpoint to the URL.
     ///
     /// This is typically computed from the request contents and a constant
-    /// stem. No POST requests are currently supported
-    fn endpoint(&self) -> String;
+    /// stem. No POST requests are currently supported.
+    fn add_endpoint(&self, url: &mut Url);
+
+    /// Append any query args to the URL.
+    fn add_query_args(&self, _url: &mut Url) {}
 
     /// Send the request over an API client.
     ///
@@ -36,7 +41,9 @@ pub trait ApiCall: Send + Sync + Debug {
         // UUID ensures event lifecycles can be tracked
         let uuid = uuid::Uuid::new_v4();
         let mut url = client.root.clone();
-        url.set_path(&self.endpoint());
+
+        self.add_endpoint(&mut url);
+        self.add_query_args(&mut url);
 
         // populate span with above
         tracing::Span::current().record("url", url.as_str());

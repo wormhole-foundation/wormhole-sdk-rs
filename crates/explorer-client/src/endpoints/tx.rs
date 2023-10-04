@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use alloy_primitives::{FixedBytes, U256};
+use reqwest::Url;
 
 use crate::ApiCall;
 
@@ -70,8 +71,8 @@ pub struct AllTxnsRequest;
 impl ApiCall for AllTxnsRequest {
     type Return = ExplorerTxResponse;
 
-    fn endpoint(&self) -> String {
-        "/api/v1/transactions/".to_string()
+    fn add_endpoint(&self, url: &mut Url) {
+        url.set_path("/api/v1/transactions/");
     }
 }
 
@@ -86,10 +87,10 @@ pub struct SingleTxRequest {
 impl ApiCall for SingleTxRequest {
     type Return = ExplorerTx;
 
-    fn endpoint(&self) -> String {
-        format!(
+    fn add_endpoint(&self, url: &mut Url) {
+        url.set_path(&format!(
             "/api/v1/transactions/{}/{}/{}",
             self.chain_id, self.emitter, self.sequence
-        )
+        ));
     }
 }

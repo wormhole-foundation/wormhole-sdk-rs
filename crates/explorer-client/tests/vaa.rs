@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use wormhole_explorer_client::{Client, VaaRequest};
+use wormhole_explorer_client::{endpoints::vaa_by_tx::VaaByTxHashRequest, Client, VaaRequest};
 
 use hex_literal::hex;
 
@@ -11,11 +11,7 @@ async fn retrieve_vaas() {
         sequence: None,
     };
 
-    let client = Client::new(
-        "https://api.wormscan.io/".parse().unwrap(),
-        Default::default(),
-    );
-
+    let client = Client::mainnet();
     let resp = client.send(&req).await;
 
     assert!(resp.is_ok());
@@ -31,11 +27,7 @@ async fn retrieve_eth_token_bridge() {
         sequence: None,
     };
 
-    let client = Client::new(
-        "https://api.wormscan.io/".parse().unwrap(),
-        Default::default(),
-    );
-
+    let client = Client::mainnet();
     let resp = client.send(&req).await;
 
     let vaas = resp.unwrap().data;
@@ -54,11 +46,7 @@ async fn retrieve_single_vaa() {
         sequence: Some(15),
     };
 
-    let client = Client::new(
-        "https://api.wormscan.io/".parse().unwrap(),
-        Default::default(),
-    );
-
+    let client = Client::mainnet();
     let resp = client.send(&req).await;
 
     let vaas = resp.unwrap().data;
@@ -66,4 +54,13 @@ async fn retrieve_single_vaa() {
     for vaa in vaas {
         vaa.deser_vaa().unwrap();
     }
+}
+
+#[tokio::test]
+async fn vaa_by_tx_hash() {
+    let req: VaaByTxHashRequest =
+        "bd012959b806c6087f40e478fc895185d06a2203c9c04ec4ccfd5e56a67b4a89".into();
+    let client = Client::testnet();
+
+    dbg!(client.send(&req).await.unwrap());
 }

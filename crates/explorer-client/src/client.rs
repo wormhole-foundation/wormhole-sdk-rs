@@ -19,7 +19,7 @@ impl std::ops::Deref for Client {
 
 impl Client {
     pub const MAINNET_URL: &'static str = "https://api.wormholescan.io/";
-    pub const TESTNET_URL: &'static str = "https://api.testnet.wormhole.cash/";
+    pub const TESTNET_URL: &'static str = "https://api.testnet.wormholescan.io/";
 
     /// Instantiate a new API client
     pub fn new(root: Url, client: reqwest::Client) -> Self {
