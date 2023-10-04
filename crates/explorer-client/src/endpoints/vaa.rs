@@ -1,4 +1,5 @@
 use alloy_primitives::FixedBytes;
+use reqwest::Url;
 use wormhole_vaas::{Readable, Vaa};
 
 use crate::{ApiCall, Pagination, Result};
@@ -21,7 +22,7 @@ pub struct ExplorerVaa {
     pub version: u8,
     pub emitter_chain: u16,
     pub emitter_addr: FixedBytes<32>,
-    pub emitter_native_addr: String,
+    pub emitter_native_addr: Option<String>,
     #[serde(with = "crate::common::base64")]
     pub vaa: Vec<u8>,
     pub timestamp: String,
@@ -64,15 +65,16 @@ pub struct VaaRequest {
 impl ApiCall for VaaRequest {
     type Return = ExplorerVaaResponse;
 
-    fn endpoint(&self) -> String {
+    fn add_endpoint(&self, url: &mut Url) {
         let stem = "/api/v1/vaas";
 
-        match (self.chain_id, &self.emitter, self.sequence) {
+        let endpoint = match (self.chain_id, &self.emitter, self.sequence) {
             (Some(cid), None, _) => format!("{stem}/{cid}"),
             (Some(cid), Some(emitter), None) => format!("{stem}/{cid}/{emitter}"),
             (Some(cid), Some(emitter), Some(seq)) => format!("{stem}/{cid}/{emitter}/{seq}"),
             _ => stem.to_string(),
-        }
+        };
+        url.set_path(&endpoint)
     }
 }
 
