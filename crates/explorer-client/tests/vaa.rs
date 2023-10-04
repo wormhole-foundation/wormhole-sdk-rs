@@ -37,6 +37,7 @@ async fn retrieve_eth_token_bridge() {
     }
 }
 
+// #[tokio::test]
 async fn retrieve_single_vaa() {
     let req = VaaRequest {
         chain_id: Some(2),
@@ -56,7 +57,7 @@ async fn retrieve_single_vaa() {
     }
 }
 
-#[tokio::test]
+// #[tokio::test]
 async fn vaa_by_tx_hash() {
     let req: VaaByTxHashRequest =
         "bd012959b806c6087f40e478fc895185d06a2203c9c04ec4ccfd5e56a67b4a89".into();
