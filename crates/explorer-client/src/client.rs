@@ -1,5 +1,6 @@
 use crate::{
     endpoints::{
+        tx::{AllTxnsRequest, ExplorerTx, SingleTxRequest},
         vaa::{ExplorerVaa, ExplorerVaaResponse},
         vaa_by_tx::VaaByTxHashRequest,
     },
@@ -79,5 +80,25 @@ impl Client {
         self.send(&VaaByTxHashRequest::from(tx_hash))
             .await
             .map(|resp| resp.data)
+    }
+
+    pub async fn fetch_all_txns(&self) -> Result<Vec<ExplorerTx>> {
+        self.send(&AllTxnsRequest)
+            .await
+            .map(|resp| resp.transactions)
+    }
+
+    pub async fn fetch_tx(
+        &self,
+        chain_id: u16,
+        emitter: FixedBytes<32>,
+        sequence: u64,
+    ) -> Result<ExplorerTx> {
+        self.send(&SingleTxRequest {
+            chain_id,
+            emitter,
+            sequence,
+        })
+        .await
     }
 }
