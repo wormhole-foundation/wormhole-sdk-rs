@@ -29,8 +29,6 @@ impl Readable for Message {
         let index = u64::read(reader)?;
         let target_chain = u16::read(reader)?;
 
-        dbg!("a");
-
         let target_len = u16::read(reader)?;
         let mut target = vec![0u8; target_len as usize];
         reader.read_exact(&mut target)?;
