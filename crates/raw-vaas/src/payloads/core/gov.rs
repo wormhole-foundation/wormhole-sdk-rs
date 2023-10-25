@@ -224,6 +224,10 @@ impl<'a> GuardianSetUpdate<'a> {
             return Err("GuardianSetUpdate span too short. Need at least 27 bytes (for at least 1 guardian)");
         }
 
+        if span[..2] != [0, 0] {
+            return Err("GuardianSetUpdate target chain must be 0");
+        }
+
         let expected_len = 7 + usize::from(span[6]) * 20;
         if span.len() != expected_len {
             return Err(
