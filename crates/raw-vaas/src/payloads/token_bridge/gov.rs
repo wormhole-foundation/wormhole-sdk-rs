@@ -153,7 +153,7 @@ impl<'a> RegisterChain<'a> {
         }
 
         if span[..2] != [0, 0] {
-            return Err("RegisterChain target chain must be 0")
+            return Err("RegisterChain target chain must be 0");
         }
 
         Ok(RegisterChain { span: &span[..36] })

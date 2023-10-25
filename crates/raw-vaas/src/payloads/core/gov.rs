@@ -225,7 +225,7 @@ impl<'a> GuardianSetUpdate<'a> {
         }
 
         if span[..2] != [0, 0] {
-            return Err("GuardianSetUpdate target chain must be 0")
+            return Err("GuardianSetUpdate target chain must be 0");
         }
 
         let expected_len = 7 + usize::from(span[6]) * 20;
