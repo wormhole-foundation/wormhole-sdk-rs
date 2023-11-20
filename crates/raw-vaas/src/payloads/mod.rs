@@ -1,3 +1,4 @@
+pub mod cctp;
 pub mod core;
 pub mod token_bridge;
 

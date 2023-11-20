@@ -2,7 +2,7 @@ mod protocol;
 pub use protocol::{GuardianSetSig, Header, Payload, Vaa};
 
 mod payloads;
-pub use payloads::{core, token_bridge, GovernanceHeader, GovernanceMessage};
+pub use payloads::{cctp, core, token_bridge, GovernanceHeader, GovernanceMessage};
 
 pub mod utils;
 
