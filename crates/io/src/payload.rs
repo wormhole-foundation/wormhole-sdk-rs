@@ -52,4 +52,88 @@ pub trait TypePrefixedPayload: Readable + Writeable + Clone + std::fmt::Debug {
             None => self.written_size(),
         }
     }
+
+    fn to_vec_payload(&self) -> Vec<u8> {
+        let mut buf = Vec::with_capacity(self.payload_written_size());
+        self.write_payload(&mut buf).expect("no alloc failure");
+        buf
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{Readable, TypePrefixedPayload, VariableBytes, Writeable};
+    use hex_literal::hex;
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct NineteenBytes([u8; 19]);
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct Message {
+        pub a: u32,
+        pub b: NineteenBytes,
+        pub c: VariableBytes,
+        pub d: [u64; 4],
+        pub e: bool,
+    }
+
+    impl TypePrefixedPayload for Message {
+        const TYPE: Option<u8> = Some(69);
+    }
+
+    impl Readable for Message {
+        const SIZE: Option<usize> = Some(88);
+
+        fn read<R>(reader: &mut R) -> std::io::Result<Self>
+        where
+            Self: Sized,
+            R: std::io::Read,
+        {
+            Ok(Self {
+                a: Readable::read(reader)?,
+                b: NineteenBytes(Readable::read(reader)?),
+                c: Readable::read(reader)?,
+                d: Readable::read(reader)?,
+                e: Readable::read(reader)?,
+            })
+        }
+    }
+
+    impl Writeable for Message {
+        fn written_size(&self) -> usize {
+            <Message as Readable>::SIZE.unwrap()
+        }
+
+        fn write<W>(&self, writer: &mut W) -> std::io::Result<()>
+        where
+            W: std::io::Write,
+        {
+            self.a.write(writer)?;
+            self.b.0.write(writer)?;
+            self.c.write(writer)?;
+            self.d.write(writer)?;
+            self.e.write(writer)?;
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn to_vec_payload() {
+        let msg = Message {
+            a: 420,
+            b: NineteenBytes(hex!("ba5edba5edba5edba5edba5edba5edba5edba5")),
+            c: b"Somebody set us up the bomb.".to_vec().into(),
+            d: [0x45; 4],
+            e: true,
+        };
+
+        let mut encoded = msg.to_vec_payload();
+        assert_eq!(encoded, hex!("45000001a4ba5edba5edba5edba5edba5edba5edba5edba50000001c536f6d65626f6479207365742075732075702074686520626f6d622e000000000000004500000000000000450000000000000045000000000000004501"));
+        assert_eq!(encoded.capacity(), msg.payload_written_size());
+        assert_eq!(encoded.capacity(), encoded.len());
+
+        let mut cursor = std::io::Cursor::new(&mut encoded);
+        let decoded = Message::read_typed(&mut cursor).unwrap();
+        assert_eq!(msg, decoded);
+    }
 }
