@@ -59,12 +59,10 @@ impl Readable for bool {
         match u8::read(reader)? {
             0 => Ok(false),
             1 => Ok(true),
-            _ => {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "invalid bool value",
-                ))
-            }
+            _ => Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "invalid bool value",
+            )),
         }
     }
 }
