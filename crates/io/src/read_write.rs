@@ -194,7 +194,7 @@ impl_for_int_array!(i32);
 impl_for_int_array!(i64);
 impl_for_int_array!(i128);
 
-/// Wrapper for Vec<u8>. Encoding is similar to Borsh, where the length is encoded as u32 (but in
+/// Wrapper for `Vec<u8>`. Encoding is similar to Borsh, where the length is encoded as u32 (but in
 /// this case, it's big endian).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VariableBytes(pub Vec<u8>);
