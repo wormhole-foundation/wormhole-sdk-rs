@@ -3,7 +3,7 @@ members = ["crates/*"]
 resolver = "2"
 
 [workspace.package]
-version = "0.1.1"
+version = "0.0.1-alpha.1"
 edition = "2021"
 authors = ["Wormhole Contributors"]
 license = "Apache-2.0"
@@ -15,7 +15,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [workspace.dependencies]
-alloy-primitives = "0.3.0"
+alloy-primitives = "0.4.0"
 hex-literal = "0.4.1"
 anchor-lang = "0.28.0"
 

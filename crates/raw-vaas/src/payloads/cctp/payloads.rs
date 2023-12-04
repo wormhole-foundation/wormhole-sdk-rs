@@ -1,6 +1,6 @@
 use crate::Payload;
 
-/// A token bridge payload, with type flag
+/// A Wormhole CCTP payload with type flag
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct WormholeCctpPayload<'a> {
     span: &'a [u8],
@@ -122,7 +122,7 @@ impl<'a> DepositWithMessage<'a> {
         u64::from_be_bytes(self.span[72..80].try_into().unwrap())
     }
 
-    pub fn sender(&self) -> [u8; 32] {
+    pub fn burn_source(&self) -> [u8; 32] {
         self.span[80..112].try_into().unwrap()
     }
 
@@ -192,7 +192,7 @@ mod test {
         assert_eq!(deposit.target_cctp_domain(), 0);
         assert_eq!(deposit.cctp_nonce(), 6668);
         assert_eq!(
-            deposit.sender(),
+            deposit.burn_source(),
             hex!("00000000000000000000000068742c08bd367031216aa14725bd347e49be895b")
         );
         assert_eq!(
