@@ -16,3 +16,6 @@ alloy-primitives = { workspace = true, optional = true }
 
 [features]
 alloy = ["dep:alloy-primitives"]
+
+[dev-dependencies]
+hex-literal.workspace = true
