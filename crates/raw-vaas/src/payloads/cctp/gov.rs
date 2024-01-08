@@ -3,21 +3,21 @@ use crate::Payload;
 pub(crate) const GOV_MODULE: &[u8; 32] =
     b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00CircleIntegration";
 
-/// Wormhole CCTP Governance payload, including type
+/// CircleIntegration Governance payload, including type
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct WormholeCctpGovPayload<'a> {
+pub struct CircleIntegrationGovPayload<'a> {
     pub(crate) span: &'a [u8],
 
     decree: CircleIntegrationDecree<'a>,
 }
 
-impl<'a> AsRef<[u8]> for WormholeCctpGovPayload<'a> {
+impl<'a> AsRef<[u8]> for CircleIntegrationGovPayload<'a> {
     fn as_ref(&self) -> &[u8] {
         self.span
     }
 }
 
-impl<'a> TryFrom<Payload<'a>> for WormholeCctpGovPayload<'a> {
+impl<'a> TryFrom<Payload<'a>> for CircleIntegrationGovPayload<'a> {
     type Error = &'static str;
 
     fn try_from(payload: Payload<'a>) -> Result<Self, &'static str> {
@@ -25,7 +25,7 @@ impl<'a> TryFrom<Payload<'a>> for WormholeCctpGovPayload<'a> {
     }
 }
 
-impl<'a> WormholeCctpGovPayload<'a> {
+impl<'a> CircleIntegrationGovPayload<'a> {
     pub fn span(&self) -> &[u8] {
         self.span
     }
@@ -36,11 +36,11 @@ impl<'a> WormholeCctpGovPayload<'a> {
 
     pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.is_empty() {
-            return Err("WormholeCctpGovPayload span too short. Need at least 1 byte");
+            return Err("CircleIntegrationGovPayload span too short. Need at least 1 byte");
         }
 
         if &span[..32] != GOV_MODULE {
-            return Err("Invalid Wormhole CCTP governance message");
+            return Err("Invalid CircleIntegration governance message");
         }
 
         let decree = CircleIntegrationDecree::parse(&span[32..])?;
@@ -132,7 +132,7 @@ impl<'a> CircleIntegrationDecree<'a> {
             2 => Self::RegisterEmitterAndDomain(TryFrom::try_from(&span[1..])?),
             3 => Self::ContractUpgrade(TryFrom::try_from(&span[1..])?),
             _ => {
-                return Err("Invalid Wormhole CCTP decree");
+                return Err("Invalid CircleIntegration decree");
             }
         };
 
@@ -258,7 +258,7 @@ impl<'a> ContractUpgrade<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::{cctp::WormholeCctpGovPayload, Vaa};
+    use crate::{cctp::CircleIntegrationGovPayload, Vaa};
     use hex_literal::hex;
 
     #[test]
@@ -275,7 +275,7 @@ mod test {
         assert_eq!(body.nonce(), 638477257);
         assert_eq!(body.emitter_chain(), 1);
 
-        let payload = WormholeCctpGovPayload::try_from(raw_vaa.payload())
+        let payload = CircleIntegrationGovPayload::try_from(raw_vaa.payload())
             .unwrap()
             .decree();
 
@@ -303,7 +303,7 @@ mod test {
         assert_eq!(body.nonce(), 638477257);
         assert_eq!(body.emitter_chain(), 1);
 
-        let err = WormholeCctpGovPayload::try_from(raw_vaa.payload())
+        let err = CircleIntegrationGovPayload::try_from(raw_vaa.payload())
             .err()
             .unwrap();
         assert_eq!(
@@ -326,7 +326,7 @@ mod test {
     //     assert_eq!(body.nonce(), 0);
     //     assert_eq!(body.emitter_chain(), 1);
 
-    //     let payload = WormholeCctpGovPayload::try_from(raw_vaa.payload())
+    //     let payload = CircleIntegrationGovPayload::try_from(raw_vaa.payload())
     //         .unwrap()
     //         .decree();
 
@@ -353,14 +353,14 @@ mod test {
     //     assert_eq!(body.nonce(), 0);
     //     assert_eq!(body.emitter_chain(), 1);
 
-    //     let err = WormholeCctpGovPayload::try_from(raw_vaa.payload())
+    //     let err = CircleIntegrationGovPayload::try_from(raw_vaa.payload())
     //         .err()
     //         .unwrap();
     //     assert_eq!(err, "ContractUpgrade span too short. Need exactly 34 bytes");
     // }
 
     #[test]
-    fn invalid_wormhole_cctp_gov() {
+    fn invalid_circle_integration_gov() {
         let vaa = hex!("0100000002010005e1bb5901b0a78951ecec430994383f9ad0e0f767c21a67a826078bf11ece0c39381fa81bfa20a6ed2ea2362a6c0d9459778f5e8bf8e949a58e23b59718f5690000bc614e0000000000010000000000000000000000000000000000000000000000000000000000000004000000000010c1110100000000000000000000000000000000000000000000000000000000436f7265010001dd33db6e624f8354d2168a9b3e04a6e04602d2f658edaa11403dc1b61b46efc5");
 
         let raw_vaa = Vaa::parse(vaa.as_slice()).unwrap();
@@ -377,9 +377,9 @@ mod test {
         let module = &payload.as_ref()[..32];
         assert_ne!(module, super::GOV_MODULE);
 
-        let err = WormholeCctpGovPayload::try_from(raw_vaa.payload())
+        let err = CircleIntegrationGovPayload::try_from(raw_vaa.payload())
             .err()
             .unwrap();
-        assert_eq!(err, "Invalid Wormhole CCTP governance message");
+        assert_eq!(err, "Invalid CircleIntegration governance message");
     }
 }
