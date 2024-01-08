@@ -1,6 +1,6 @@
 #![cfg(any(feature = "on-chain", feature = "off-chain"))]
 
-//! Provides support for EITHER ruint@1.8.0 OR alloy_primitives.
+//! Provides support for EITHER ruint@1.9.0 OR alloy_primitives.
 
 #[cfg(feature = "ruint")]
 use ruint::Uint;
