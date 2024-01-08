@@ -92,7 +92,7 @@ impl<'a> WormholeCctpMessage<'a> {
 
         match span[0] {
             1 => Ok(Self::Deposit(Deposit::parse(&span[1..])?)),
-            2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 => Ok(Self::ReservedUnknown(&span[1..])),
+            2..=10 => Ok(Self::ReservedUnknown(&span[1..])),
             _ => Err("Unknown WormholeCctpMessage type"),
         }
     }
