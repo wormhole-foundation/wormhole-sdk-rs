@@ -86,6 +86,13 @@ impl<'a> TokenBridgeDecree<'a> {
         }
     }
 
+    pub fn to_register_chain_unchecked(self) -> RegisterChain<'a> {
+        match self {
+            TokenBridgeDecree::RegisterChain(inner) => inner,
+            _ => panic!("TokenBridgeDecree is not RegisterChain"),
+        }
+    }
+
     pub fn contract_upgrade(&self) -> Option<&ContractUpgrade> {
         match self {
             TokenBridgeDecree::ContractUpgrade(inner) => Some(inner),
@@ -93,10 +100,24 @@ impl<'a> TokenBridgeDecree<'a> {
         }
     }
 
+    pub fn to_contract_upgrade_unchecked(self) -> ContractUpgrade<'a> {
+        match self {
+            TokenBridgeDecree::ContractUpgrade(inner) => inner,
+            _ => panic!("TokenBridgeDecree is not ContractUpgrade"),
+        }
+    }
+
     pub fn recover_chain_id(&self) -> Option<&RecoverChainId> {
         match self {
             TokenBridgeDecree::RecoverChainId(inner) => Some(inner),
             _ => None,
+        }
+    }
+
+    pub fn to_recover_chain_id_unchecked(self) -> RecoverChainId<'a> {
+        match self {
+            TokenBridgeDecree::RecoverChainId(inner) => inner,
+            _ => panic!("TokenBridgeDecree is not RecoverChainId"),
         }
     }
 

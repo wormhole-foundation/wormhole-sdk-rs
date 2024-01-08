@@ -82,6 +82,13 @@ impl<'a> TokenBridgeMessage<'a> {
         }
     }
 
+    pub fn to_transfer_unchecked(self) -> Transfer<'a> {
+        match self {
+            TokenBridgeMessage::Transfer(inner) => inner,
+            _ => panic!("TokenBridgeMessage is not Transfer"),
+        }
+    }
+
     pub fn attestation(&self) -> Option<&Attestation> {
         match self {
             TokenBridgeMessage::Attestation(inner) => Some(inner),
@@ -89,10 +96,24 @@ impl<'a> TokenBridgeMessage<'a> {
         }
     }
 
+    pub fn to_attestation_unchecked(self) -> Attestation<'a> {
+        match self {
+            TokenBridgeMessage::Attestation(inner) => inner,
+            _ => panic!("TokenBridgeMessage is not Attestation"),
+        }
+    }
+
     pub fn transfer_with_message(&self) -> Option<&TransferWithMessage> {
         match self {
             TokenBridgeMessage::TransferWithMessage(inner) => Some(inner),
             _ => None,
+        }
+    }
+
+    pub fn to_transfer_with_message_unchecked(self) -> TransferWithMessage<'a> {
+        match self {
+            TokenBridgeMessage::TransferWithMessage(inner) => inner,
+            _ => panic!("TokenBridgeMessage is not TransferWithMessage"),
         }
     }
 

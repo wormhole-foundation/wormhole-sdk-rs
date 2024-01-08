@@ -8,7 +8,7 @@ pub(crate) const GOV_MODULE: &[u8; 32] =
 pub struct WormholeCctpGovPayload<'a> {
     pub(crate) span: &'a [u8],
 
-    decree: WormholeCctpDecree<'a>,
+    decree: CircleIntegrationDecree<'a>,
 }
 
 impl<'a> AsRef<[u8]> for WormholeCctpGovPayload<'a> {
@@ -30,7 +30,7 @@ impl<'a> WormholeCctpGovPayload<'a> {
         self.span
     }
 
-    pub fn decree(&self) -> WormholeCctpDecree<'a> {
+    pub fn decree(&self) -> CircleIntegrationDecree<'a> {
         self.decree
     }
 
@@ -43,7 +43,7 @@ impl<'a> WormholeCctpGovPayload<'a> {
             return Err("Invalid Wormhole CCTP governance message");
         }
 
-        let decree = WormholeCctpDecree::parse(&span[32..])?;
+        let decree = CircleIntegrationDecree::parse(&span[32..])?;
 
         Ok(Self { span, decree })
     }
@@ -51,13 +51,13 @@ impl<'a> WormholeCctpGovPayload<'a> {
 
 /// The non-type-flag contents
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum WormholeCctpDecree<'a> {
+pub enum CircleIntegrationDecree<'a> {
     UpdateWormholeFinality(UpdateWormholeFinality<'a>),
     RegisterEmitterAndDomain(RegisterEmitterAndDomain<'a>),
     ContractUpgrade(ContractUpgrade<'a>),
 }
 
-impl<'a> AsRef<[u8]> for WormholeCctpDecree<'a> {
+impl<'a> AsRef<[u8]> for CircleIntegrationDecree<'a> {
     fn as_ref(&self) -> &[u8] {
         match self {
             Self::UpdateWormholeFinality(inner) => inner.as_ref(),
@@ -67,7 +67,7 @@ impl<'a> AsRef<[u8]> for WormholeCctpDecree<'a> {
     }
 }
 
-impl<'a> TryFrom<&'a [u8]> for WormholeCctpDecree<'a> {
+impl<'a> TryFrom<&'a [u8]> for CircleIntegrationDecree<'a> {
     type Error = &'static str;
 
     fn try_from(span: &'a [u8]) -> Result<Self, &'static str> {
@@ -75,7 +75,7 @@ impl<'a> TryFrom<&'a [u8]> for WormholeCctpDecree<'a> {
     }
 }
 
-impl<'a> WormholeCctpDecree<'a> {
+impl<'a> CircleIntegrationDecree<'a> {
     pub fn span(&self) -> &[u8] {
         self.as_ref()
     }
@@ -87,10 +87,24 @@ impl<'a> WormholeCctpDecree<'a> {
         }
     }
 
+    pub fn to_update_wormhole_finality_unchecked(self) -> UpdateWormholeFinality<'a> {
+        match self {
+            Self::UpdateWormholeFinality(inner) => inner,
+            _ => panic!("CircleIntegrationDecree is not UpdateWormholeFinality"),
+        }
+    }
+
     pub fn register_emitter_and_domain(&self) -> Option<&RegisterEmitterAndDomain> {
         match self {
             Self::RegisterEmitterAndDomain(inner) => Some(inner),
             _ => None,
+        }
+    }
+
+    pub fn to_register_emitter_and_domain_unchecked(self) -> RegisterEmitterAndDomain<'a> {
+        match self {
+            Self::RegisterEmitterAndDomain(inner) => inner,
+            _ => panic!("CircleIntegrationDecree is not RegisterEmitterAndDomain"),
         }
     }
 
@@ -101,9 +115,16 @@ impl<'a> WormholeCctpDecree<'a> {
         }
     }
 
+    pub fn to_contract_upgrade_unchecked(self) -> ContractUpgrade<'a> {
+        match self {
+            Self::ContractUpgrade(inner) => inner,
+            _ => panic!("CircleIntegrationDecree is not ContractUpgrade"),
+        }
+    }
+
     pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.is_empty() {
-            return Err("WormholeCctpDecree span too short. Need at least 1 byte");
+            return Err("CircleIntegrationDecree span too short. Need at least 1 byte");
         }
 
         let decree = match span[0] {

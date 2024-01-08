@@ -90,10 +90,24 @@ impl<'a> CoreBridgeDecree<'a> {
         }
     }
 
+    pub fn to_contract_upgrade_unchecked(self) -> ContractUpgrade<'a> {
+        match self {
+            CoreBridgeDecree::ContractUpgrade(inner) => inner,
+            _ => panic!("CoreBridgeDecree is not ContractUpgrade"),
+        }
+    }
+
     pub fn guardian_set_update(&self) -> Option<&GuardianSetUpdate> {
         match self {
             CoreBridgeDecree::GuardianSetUpdate(inner) => Some(inner),
             _ => None,
+        }
+    }
+
+    pub fn to_guardian_set_update_unchecked(self) -> GuardianSetUpdate<'a> {
+        match self {
+            CoreBridgeDecree::GuardianSetUpdate(inner) => inner,
+            _ => panic!("CoreBridgeDecree is not GuardianSetUpdate"),
         }
     }
 
@@ -104,6 +118,13 @@ impl<'a> CoreBridgeDecree<'a> {
         }
     }
 
+    pub fn to_set_message_fee_unchecked(self) -> SetMessageFee<'a> {
+        match self {
+            CoreBridgeDecree::SetMessageFee(inner) => inner,
+            _ => panic!("CoreBridgeDecree is not SetMessageFee"),
+        }
+    }
+
     pub fn transfer_fees(&self) -> Option<&TransferFees> {
         match self {
             CoreBridgeDecree::TransferFees(inner) => Some(inner),
@@ -111,10 +132,24 @@ impl<'a> CoreBridgeDecree<'a> {
         }
     }
 
+    pub fn to_transfer_fees_unchecked(self) -> TransferFees<'a> {
+        match self {
+            CoreBridgeDecree::TransferFees(inner) => inner,
+            _ => panic!("CoreBridgeDecree is not TransferFees"),
+        }
+    }
+
     pub fn recover_chain_id(&self) -> Option<&RecoverChainId> {
         match self {
             CoreBridgeDecree::RecoverChainId(inner) => Some(inner),
             _ => None,
+        }
+    }
+
+    pub fn to_recover_chain_id_unchecked(self) -> RecoverChainId<'a> {
+        match self {
+            CoreBridgeDecree::RecoverChainId(inner) => inner,
+            _ => panic!("CoreBridgeDecree is not RecoverChainId"),
         }
     }
 
