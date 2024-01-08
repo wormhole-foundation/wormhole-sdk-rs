@@ -81,7 +81,7 @@ impl<'a> WormholeCctpMessage<'a> {
     pub fn to_deposit_unchecked(self) -> Deposit<'a> {
         match self {
             Self::Deposit(inner) => inner,
-            _ => panic!("WormholeCctpMessage is not a Deposit"),
+            _ => panic!("WormholeCctpMessage is not Deposit"),
         }
     }
 
