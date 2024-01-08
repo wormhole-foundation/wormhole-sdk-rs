@@ -23,5 +23,6 @@ serde = "1.0.171"
 serde_json = "1.0.103"
 
 wormhole-io = { path = "crates/io" }
+wormhole-raw-vaas = { path = "crates/raw-vaas" }
 wormhole-vaas = { path = "crates/vaas" }
 wormhole-explorer-client = { path = "crates/explorer-client" }

@@ -10,7 +10,7 @@ pub struct TokenBridgePayload<'a> {
     message: TokenBridgeMessage<'a>,
 }
 
-impl AsRef<[u8]> for TokenBridgePayload<'_> {
+impl<'a> AsRef<[u8]> for TokenBridgePayload<'a> {
     fn as_ref(&self) -> &[u8] {
         self.span
     }
@@ -19,8 +19,8 @@ impl AsRef<[u8]> for TokenBridgePayload<'_> {
 impl<'a> TryFrom<Payload<'a>> for TokenBridgePayload<'a> {
     type Error = &'static str;
 
-    fn try_from(payload: Payload<'a>) -> Result<TokenBridgePayload<'a>, &'static str> {
-        TokenBridgePayload::parse(payload.span)
+    fn try_from(payload: Payload<'a>) -> Result<Self, &'static str> {
+        Self::parse(payload.0)
     }
 }
 
@@ -33,14 +33,14 @@ impl<'a> TokenBridgePayload<'a> {
         self.message
     }
 
-    pub fn parse(span: &'a [u8]) -> Result<TokenBridgePayload<'a>, &'static str> {
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.is_empty() {
             return Err("TokenBridgePayload span too short. Need at least 1 byte");
         }
 
         let message = TokenBridgeMessage::parse(span)?;
 
-        Ok(TokenBridgePayload { span, message })
+        Ok(Self { span, message })
     }
 }
 
@@ -55,17 +55,17 @@ pub enum TokenBridgeMessage<'a> {
 impl<'a> TryFrom<Payload<'a>> for TokenBridgeMessage<'a> {
     type Error = &'static str;
 
-    fn try_from(payload: Payload<'a>) -> Result<TokenBridgeMessage<'a>, &'static str> {
-        TokenBridgeMessage::parse(payload.span)
+    fn try_from(payload: Payload<'a>) -> Result<Self, &'static str> {
+        Self::parse(payload.0)
     }
 }
 
 impl AsRef<[u8]> for TokenBridgeMessage<'_> {
     fn as_ref(&self) -> &[u8] {
         match self {
-            TokenBridgeMessage::Transfer(inner) => inner.as_ref(),
-            TokenBridgeMessage::Attestation(inner) => inner.as_ref(),
-            TokenBridgeMessage::TransferWithMessage(inner) => inner.as_ref(),
+            Self::Transfer(inner) => inner.as_ref(),
+            Self::Attestation(inner) => inner.as_ref(),
+            Self::TransferWithMessage(inner) => inner.as_ref(),
         }
     }
 }
@@ -82,10 +82,24 @@ impl<'a> TokenBridgeMessage<'a> {
         }
     }
 
+    pub fn to_transfer_unchecked(self) -> Transfer<'a> {
+        match self {
+            TokenBridgeMessage::Transfer(inner) => inner,
+            _ => panic!("TokenBridgeMessage is not Transfer"),
+        }
+    }
+
     pub fn attestation(&self) -> Option<&Attestation> {
         match self {
             TokenBridgeMessage::Attestation(inner) => Some(inner),
             _ => None,
+        }
+    }
+
+    pub fn to_attestation_unchecked(self) -> Attestation<'a> {
+        match self {
+            TokenBridgeMessage::Attestation(inner) => inner,
+            _ => panic!("TokenBridgeMessage is not Attestation"),
         }
     }
 
@@ -96,19 +110,24 @@ impl<'a> TokenBridgeMessage<'a> {
         }
     }
 
+    pub fn to_transfer_with_message_unchecked(self) -> TransferWithMessage<'a> {
+        match self {
+            TokenBridgeMessage::TransferWithMessage(inner) => inner,
+            _ => panic!("TokenBridgeMessage is not TransferWithMessage"),
+        }
+    }
+
     pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.is_empty() {
             return Err("TokenBridgeMessage span too short. Need at least 1 byte");
         }
 
         match span[0] {
-            1 => Ok(TokenBridgeMessage::Transfer(Transfer::parse(&span[1..])?)),
-            2 => Ok(TokenBridgeMessage::Attestation(Attestation::parse(
+            1 => Ok(Self::Transfer(Transfer::parse(&span[1..])?)),
+            2 => Ok(Self::Attestation(Attestation::parse(&span[1..])?)),
+            3 => Ok(Self::TransferWithMessage(TransferWithMessage::parse(
                 &span[1..],
             )?)),
-            3 => Ok(TokenBridgeMessage::TransferWithMessage(
-                TransferWithMessage::parse(&span[1..])?,
-            )),
             _ => Err("Unknown TokenBridgeMessage type"),
         }
     }
@@ -116,165 +135,159 @@ impl<'a> TokenBridgeMessage<'a> {
 
 /// A token bridge transfer
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct Transfer<'a> {
-    span: &'a [u8],
-}
+pub struct Transfer<'a>(&'a [u8]);
 
-impl AsRef<[u8]> for Transfer<'_> {
+impl<'a> AsRef<[u8]> for Transfer<'a> {
     fn as_ref(&self) -> &[u8] {
-        self.span
+        self.0
     }
 }
 
 impl<'a> Transfer<'a> {
     pub fn amount(&self) -> [u8; 32] {
-        self.span[..32].try_into().unwrap()
+        self.0[..32].try_into().unwrap()
     }
 
     pub fn token_address(&self) -> [u8; 32] {
-        self.span[32..64].try_into().unwrap()
+        self.0[32..64].try_into().unwrap()
     }
 
     pub fn token_chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[64..66].try_into().unwrap())
+        u16::from_be_bytes(self.0[64..66].try_into().unwrap())
     }
 
     pub fn recipient(&self) -> [u8; 32] {
-        self.span[66..98].try_into().unwrap()
+        self.0[66..98].try_into().unwrap()
     }
 
     pub fn recipient_chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[98..100].try_into().unwrap())
+        u16::from_be_bytes(self.0[98..100].try_into().unwrap())
     }
 
     pub fn relayer_fee(&self) -> [u8; 32] {
-        self.span[100..132].try_into().unwrap()
+        self.0[100..132].try_into().unwrap()
     }
 
-    pub fn parse(span: &'a [u8]) -> Result<Transfer<'a>, &'static str> {
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.len() < 132 {
             return Err("Transfer span too short. Need exactly 132 bytes");
         }
 
-        Ok(Transfer { span: &span[..132] })
+        Ok(Self(&span[..132]))
     }
 }
 
 /// A token bridge attestation
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct Attestation<'a> {
-    span: &'a [u8],
-}
+pub struct Attestation<'a>(&'a [u8]);
 
-impl AsRef<[u8]> for Attestation<'_> {
+impl<'a> AsRef<[u8]> for Attestation<'a> {
     fn as_ref(&self) -> &[u8] {
-        self.span
+        self.0
     }
 }
 
 impl<'a> TryFrom<&'a [u8]> for Attestation<'a> {
     type Error = &'static str;
 
-    fn try_from(span: &'a [u8]) -> Result<Attestation<'a>, &'static str> {
-        Attestation::parse(span)
+    fn try_from(span: &'a [u8]) -> Result<Self, &'static str> {
+        Self::parse(span)
     }
 }
 
 impl<'a> Attestation<'a> {
     pub fn token_address(&self) -> [u8; 32] {
-        self.span[..32].try_into().unwrap()
+        self.0[..32].try_into().unwrap()
     }
 
     pub fn token_chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[32..34].try_into().unwrap())
+        u16::from_be_bytes(self.0[32..34].try_into().unwrap())
     }
 
     pub fn decimals(&self) -> u8 {
-        self.span[34]
+        self.0[34]
     }
 
     pub fn symbol(&self) -> Cow<'a, str> {
-        let idx = &self.span[35..67]
+        let idx = &self.0[35..67]
             .iter()
             .rposition(|x| *x != 0)
             .map(|i| i + 1)
             .unwrap_or_default();
-        String::from_utf8_lossy(&self.span[35..35 + idx])
+        String::from_utf8_lossy(&self.0[35..35 + idx])
     }
 
     pub fn name(&self) -> Cow<'a, str> {
-        let idx = &self.span[67..99]
+        let idx = &self.0[67..99]
             .iter()
             .rposition(|x| *x != 0)
             .map(|i| i + 1)
             .unwrap_or_default();
-        String::from_utf8_lossy(&self.span[67..67 + idx])
+        String::from_utf8_lossy(&self.0[67..67 + idx])
     }
 
-    pub fn parse(span: &'a [u8]) -> Result<Attestation<'a>, &'static str> {
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.len() < 99 {
             return Err("Attestation span too short. Need exactly 99 bytes");
         }
 
-        Ok(Attestation { span: &span[..99] })
+        Ok(Self(&span[..99]))
     }
 }
 
 /// A token bridge transfer with message
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct TransferWithMessage<'a> {
-    span: &'a [u8],
-}
+pub struct TransferWithMessage<'a>(&'a [u8]);
 
-impl AsRef<[u8]> for TransferWithMessage<'_> {
+impl<'a> AsRef<[u8]> for TransferWithMessage<'a> {
     fn as_ref(&self) -> &[u8] {
-        self.span
+        self.0
     }
 }
 
 impl<'a> TryFrom<&'a [u8]> for TransferWithMessage<'a> {
     type Error = &'static str;
 
-    fn try_from(span: &'a [u8]) -> Result<TransferWithMessage<'a>, &'static str> {
-        TransferWithMessage::parse(span)
+    fn try_from(span: &'a [u8]) -> Result<Self, &'static str> {
+        Self::parse(span)
     }
 }
 
 impl<'a> TransferWithMessage<'a> {
     pub fn amount(&self) -> [u8; 32] {
-        self.span[..32].try_into().unwrap()
+        self.0[..32].try_into().unwrap()
     }
 
     pub fn token_address(&self) -> [u8; 32] {
-        self.span[32..64].try_into().unwrap()
+        self.0[32..64].try_into().unwrap()
     }
 
     pub fn token_chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[64..66].try_into().unwrap())
+        u16::from_be_bytes(self.0[64..66].try_into().unwrap())
     }
 
     pub fn redeemer(&self) -> [u8; 32] {
-        self.span[66..98].try_into().unwrap()
+        self.0[66..98].try_into().unwrap()
     }
 
     pub fn redeemer_chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[98..100].try_into().unwrap())
+        u16::from_be_bytes(self.0[98..100].try_into().unwrap())
     }
 
     pub fn sender(&self) -> [u8; 32] {
-        self.span[100..132].try_into().unwrap()
+        self.0[100..132].try_into().unwrap()
     }
 
     pub fn payload(&self) -> &[u8] {
-        &self.span[132..]
+        &self.0[132..]
     }
 
-    pub fn parse(span: &'a [u8]) -> Result<TransferWithMessage<'a>, &'static str> {
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.len() < 132 {
             return Err("TransferWithMessage span too short. Need at least 132 bytes");
         }
 
-        Ok(TransferWithMessage { span })
+        Ok(Self(span))
     }
 }
 

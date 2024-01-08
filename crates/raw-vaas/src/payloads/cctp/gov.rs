@@ -3,115 +3,136 @@ use crate::Payload;
 pub(crate) const GOV_MODULE: &[u8; 32] =
     b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00CircleIntegration";
 
-/// Wormhole CCTP Governance payload, including type
+/// CircleIntegration Governance payload, including type
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct WormholeCctpGovPayload<'a> {
+pub struct CircleIntegrationGovPayload<'a> {
     pub(crate) span: &'a [u8],
 
-    decree: WormholeCctpDecree<'a>,
+    decree: CircleIntegrationDecree<'a>,
 }
 
-impl AsRef<[u8]> for WormholeCctpGovPayload<'_> {
+impl<'a> AsRef<[u8]> for CircleIntegrationGovPayload<'a> {
     fn as_ref(&self) -> &[u8] {
         self.span
     }
 }
 
-impl<'a> TryFrom<Payload<'a>> for WormholeCctpGovPayload<'a> {
+impl<'a> TryFrom<Payload<'a>> for CircleIntegrationGovPayload<'a> {
     type Error = &'static str;
 
-    fn try_from(payload: Payload<'a>) -> Result<WormholeCctpGovPayload<'a>, &'static str> {
-        WormholeCctpGovPayload::parse(payload.span)
+    fn try_from(payload: Payload<'a>) -> Result<Self, &'static str> {
+        Self::parse(payload.0)
     }
 }
 
-impl<'a> WormholeCctpGovPayload<'a> {
+impl<'a> CircleIntegrationGovPayload<'a> {
     pub fn span(&self) -> &[u8] {
         self.span
     }
 
-    pub fn decree(&self) -> WormholeCctpDecree<'a> {
+    pub fn decree(&self) -> CircleIntegrationDecree<'a> {
         self.decree
     }
 
-    pub fn parse(span: &[u8]) -> Result<WormholeCctpGovPayload, &'static str> {
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.is_empty() {
-            return Err("WormholeCctpGovPayload span too short. Need at least 1 byte");
+            return Err("CircleIntegrationGovPayload span too short. Need at least 1 byte");
         }
 
         if &span[..32] != GOV_MODULE {
-            return Err("Invalid Wormhole CCTP governance message");
+            return Err("Invalid CircleIntegration governance message");
         }
 
-        let decree = WormholeCctpDecree::parse(&span[32..])?;
+        let decree = CircleIntegrationDecree::parse(&span[32..])?;
 
-        Ok(WormholeCctpGovPayload { span, decree })
+        Ok(Self { span, decree })
     }
 }
 
 /// The non-type-flag contents
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum WormholeCctpDecree<'a> {
+pub enum CircleIntegrationDecree<'a> {
     UpdateWormholeFinality(UpdateWormholeFinality<'a>),
     RegisterEmitterAndDomain(RegisterEmitterAndDomain<'a>),
     ContractUpgrade(ContractUpgrade<'a>),
 }
 
-impl AsRef<[u8]> for WormholeCctpDecree<'_> {
+impl<'a> AsRef<[u8]> for CircleIntegrationDecree<'a> {
     fn as_ref(&self) -> &[u8] {
         match self {
-            WormholeCctpDecree::UpdateWormholeFinality(inner) => inner.as_ref(),
-            WormholeCctpDecree::RegisterEmitterAndDomain(inner) => inner.as_ref(),
-            WormholeCctpDecree::ContractUpgrade(inner) => inner.as_ref(),
+            Self::UpdateWormholeFinality(inner) => inner.as_ref(),
+            Self::RegisterEmitterAndDomain(inner) => inner.as_ref(),
+            Self::ContractUpgrade(inner) => inner.as_ref(),
         }
     }
 }
 
-impl<'a> TryFrom<&'a [u8]> for WormholeCctpDecree<'a> {
+impl<'a> TryFrom<&'a [u8]> for CircleIntegrationDecree<'a> {
     type Error = &'static str;
 
-    fn try_from(span: &'a [u8]) -> Result<WormholeCctpDecree<'a>, &'static str> {
-        WormholeCctpDecree::parse(span)
+    fn try_from(span: &'a [u8]) -> Result<Self, &'static str> {
+        Self::parse(span)
     }
 }
 
-impl<'a> WormholeCctpDecree<'a> {
+impl<'a> CircleIntegrationDecree<'a> {
     pub fn span(&self) -> &[u8] {
         self.as_ref()
     }
 
     pub fn update_wormhole_finality(&self) -> Option<&UpdateWormholeFinality> {
         match self {
-            WormholeCctpDecree::UpdateWormholeFinality(inner) => Some(inner),
+            Self::UpdateWormholeFinality(inner) => Some(inner),
             _ => None,
+        }
+    }
+
+    pub fn to_update_wormhole_finality_unchecked(self) -> UpdateWormholeFinality<'a> {
+        match self {
+            Self::UpdateWormholeFinality(inner) => inner,
+            _ => panic!("CircleIntegrationDecree is not UpdateWormholeFinality"),
         }
     }
 
     pub fn register_emitter_and_domain(&self) -> Option<&RegisterEmitterAndDomain> {
         match self {
-            WormholeCctpDecree::RegisterEmitterAndDomain(inner) => Some(inner),
+            Self::RegisterEmitterAndDomain(inner) => Some(inner),
             _ => None,
+        }
+    }
+
+    pub fn to_register_emitter_and_domain_unchecked(self) -> RegisterEmitterAndDomain<'a> {
+        match self {
+            Self::RegisterEmitterAndDomain(inner) => inner,
+            _ => panic!("CircleIntegrationDecree is not RegisterEmitterAndDomain"),
         }
     }
 
     pub fn contract_upgrade(&self) -> Option<&ContractUpgrade> {
         match self {
-            WormholeCctpDecree::ContractUpgrade(inner) => Some(inner),
+            Self::ContractUpgrade(inner) => Some(inner),
             _ => None,
+        }
+    }
+
+    pub fn to_contract_upgrade_unchecked(self) -> ContractUpgrade<'a> {
+        match self {
+            Self::ContractUpgrade(inner) => inner,
+            _ => panic!("CircleIntegrationDecree is not ContractUpgrade"),
         }
     }
 
     pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.is_empty() {
-            return Err("WormholeCctpDecree span too short. Need at least 1 byte");
+            return Err("CircleIntegrationDecree span too short. Need at least 1 byte");
         }
 
         let decree = match span[0] {
-            1 => WormholeCctpDecree::UpdateWormholeFinality(TryFrom::try_from(&span[1..])?),
-            2 => WormholeCctpDecree::RegisterEmitterAndDomain(TryFrom::try_from(&span[1..])?),
-            3 => WormholeCctpDecree::ContractUpgrade(TryFrom::try_from(&span[1..])?),
+            1 => Self::UpdateWormholeFinality(TryFrom::try_from(&span[1..])?),
+            2 => Self::RegisterEmitterAndDomain(TryFrom::try_from(&span[1..])?),
+            3 => Self::ContractUpgrade(TryFrom::try_from(&span[1..])?),
             _ => {
-                return Err("Invalid Wormhole CCTP decree");
+                return Err("Invalid CircleIntegration decree");
             }
         };
 
@@ -121,129 +142,123 @@ impl<'a> WormholeCctpDecree<'a> {
 
 /// Update Wormhole finality
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct UpdateWormholeFinality<'a> {
-    pub(crate) span: &'a [u8],
-}
+pub struct UpdateWormholeFinality<'a>(&'a [u8]);
 
 impl AsRef<[u8]> for UpdateWormholeFinality<'_> {
     fn as_ref(&self) -> &[u8] {
-        self.span
+        self.0
     }
 }
 
 impl<'a> TryFrom<&'a [u8]> for UpdateWormholeFinality<'a> {
     type Error = &'static str;
 
-    fn try_from(span: &'a [u8]) -> Result<UpdateWormholeFinality<'a>, &'static str> {
-        UpdateWormholeFinality::parse(span)
+    fn try_from(span: &'a [u8]) -> Result<Self, &'static str> {
+        Self::parse(span)
     }
 }
 
 impl<'a> UpdateWormholeFinality<'a> {
     pub fn chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[..2].try_into().unwrap())
+        u16::from_be_bytes(self.0[..2].try_into().unwrap())
     }
 
     pub fn finality(&self) -> u8 {
-        self.span[2]
+        self.0[2]
     }
 
-    pub fn parse(span: &'a [u8]) -> Result<UpdateWormholeFinality<'a>, &'static str> {
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.len() != 3 {
             return Err("UpdateWormholeFinality span too short. Need exactly 3 bytes");
         }
 
-        Ok(UpdateWormholeFinality { span: &span[..3] })
+        Ok(Self(&span[..3]))
     }
 }
 
 /// Register emitter and CCTP domain
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct RegisterEmitterAndDomain<'a> {
-    span: &'a [u8],
-}
+pub struct RegisterEmitterAndDomain<'a>(&'a [u8]);
 
 impl AsRef<[u8]> for RegisterEmitterAndDomain<'_> {
     fn as_ref(&self) -> &[u8] {
-        self.span
+        self.0
     }
 }
 
 impl<'a> TryFrom<&'a [u8]> for RegisterEmitterAndDomain<'a> {
     type Error = &'static str;
 
-    fn try_from(span: &'a [u8]) -> Result<RegisterEmitterAndDomain<'a>, &'static str> {
-        RegisterEmitterAndDomain::parse(span)
+    fn try_from(span: &'a [u8]) -> Result<Self, &'static str> {
+        Self::parse(span)
     }
 }
 
 impl<'a> RegisterEmitterAndDomain<'a> {
     pub fn chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[..2].try_into().unwrap())
+        u16::from_be_bytes(self.0[..2].try_into().unwrap())
     }
 
     pub fn foreign_chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[2..4].try_into().unwrap())
+        u16::from_be_bytes(self.0[2..4].try_into().unwrap())
     }
 
     pub fn foreign_emitter(&self) -> [u8; 32] {
-        self.span[4..36].try_into().unwrap()
+        self.0[4..36].try_into().unwrap()
     }
 
     pub fn cctp_domain(&self) -> u32 {
-        u32::from_be_bytes(self.span[36..40].try_into().unwrap())
+        u32::from_be_bytes(self.0[36..40].try_into().unwrap())
     }
 
-    pub fn parse(span: &'a [u8]) -> Result<RegisterEmitterAndDomain<'a>, &'static str> {
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.len() != 40 {
             return Err("RegisterEmitterAndDomain span too short. Need exactly 40 bytes");
         }
 
-        Ok(RegisterEmitterAndDomain { span: &span[..40] })
+        Ok(Self(&span[..40]))
     }
 }
 
 /// Upgrade a contract
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct ContractUpgrade<'a> {
-    span: &'a [u8],
-}
+pub struct ContractUpgrade<'a>(&'a [u8]);
 
 impl AsRef<[u8]> for ContractUpgrade<'_> {
     fn as_ref(&self) -> &[u8] {
-        self.span
+        self.0
     }
 }
 
 impl<'a> TryFrom<&'a [u8]> for ContractUpgrade<'a> {
     type Error = &'static str;
 
-    fn try_from(span: &'a [u8]) -> Result<ContractUpgrade<'a>, &'static str> {
-        ContractUpgrade::parse(span)
+    fn try_from(span: &'a [u8]) -> Result<Self, &'static str> {
+        Self::parse(span)
     }
 }
 
 impl<'a> ContractUpgrade<'a> {
     pub fn chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[..2].try_into().unwrap())
+        u16::from_be_bytes(self.0[..2].try_into().unwrap())
     }
 
     pub fn implementation(&self) -> [u8; 32] {
-        self.span[2..34].try_into().unwrap()
+        self.0[2..34].try_into().unwrap()
     }
 
-    pub fn parse(span: &'a [u8]) -> Result<ContractUpgrade<'a>, &'static str> {
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.len() != 34 {
             return Err("ContractUpgrade span too short. Need exactly 34 bytes");
         }
 
-        Ok(ContractUpgrade { span: &span[..34] })
+        Ok(Self(&span[..34]))
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{cctp::WormholeCctpGovPayload, Vaa};
+    use crate::{cctp::CircleIntegrationGovPayload, Vaa};
     use hex_literal::hex;
 
     #[test]
@@ -260,7 +275,7 @@ mod test {
         assert_eq!(body.nonce(), 638477257);
         assert_eq!(body.emitter_chain(), 1);
 
-        let payload = WormholeCctpGovPayload::try_from(raw_vaa.payload())
+        let payload = CircleIntegrationGovPayload::try_from(raw_vaa.payload())
             .unwrap()
             .decree();
 
@@ -288,7 +303,7 @@ mod test {
         assert_eq!(body.nonce(), 638477257);
         assert_eq!(body.emitter_chain(), 1);
 
-        let err = WormholeCctpGovPayload::try_from(raw_vaa.payload())
+        let err = CircleIntegrationGovPayload::try_from(raw_vaa.payload())
             .err()
             .unwrap();
         assert_eq!(
@@ -311,7 +326,7 @@ mod test {
     //     assert_eq!(body.nonce(), 0);
     //     assert_eq!(body.emitter_chain(), 1);
 
-    //     let payload = WormholeCctpGovPayload::try_from(raw_vaa.payload())
+    //     let payload = CircleIntegrationGovPayload::try_from(raw_vaa.payload())
     //         .unwrap()
     //         .decree();
 
@@ -338,14 +353,14 @@ mod test {
     //     assert_eq!(body.nonce(), 0);
     //     assert_eq!(body.emitter_chain(), 1);
 
-    //     let err = WormholeCctpGovPayload::try_from(raw_vaa.payload())
+    //     let err = CircleIntegrationGovPayload::try_from(raw_vaa.payload())
     //         .err()
     //         .unwrap();
     //     assert_eq!(err, "ContractUpgrade span too short. Need exactly 34 bytes");
     // }
 
     #[test]
-    fn invalid_wormhole_cctp_gov() {
+    fn invalid_circle_integration_gov() {
         let vaa = hex!("0100000002010005e1bb5901b0a78951ecec430994383f9ad0e0f767c21a67a826078bf11ece0c39381fa81bfa20a6ed2ea2362a6c0d9459778f5e8bf8e949a58e23b59718f5690000bc614e0000000000010000000000000000000000000000000000000000000000000000000000000004000000000010c1110100000000000000000000000000000000000000000000000000000000436f7265010001dd33db6e624f8354d2168a9b3e04a6e04602d2f658edaa11403dc1b61b46efc5");
 
         let raw_vaa = Vaa::parse(vaa.as_slice()).unwrap();
@@ -362,9 +377,9 @@ mod test {
         let module = &payload.as_ref()[..32];
         assert_ne!(module, super::GOV_MODULE);
 
-        let err = WormholeCctpGovPayload::try_from(raw_vaa.payload())
+        let err = CircleIntegrationGovPayload::try_from(raw_vaa.payload())
             .err()
             .unwrap();
-        assert_eq!(err, "Invalid Wormhole CCTP governance message");
+        assert_eq!(err, "Invalid CircleIntegration governance message");
     }
 }
