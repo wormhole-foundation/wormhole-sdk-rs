@@ -8,7 +8,7 @@ pub struct WormholeCctpPayload<'a> {
     message: WormholeCctpMessage<'a>,
 }
 
-impl AsRef<[u8]> for WormholeCctpPayload<'_> {
+impl<'a> AsRef<[u8]> for WormholeCctpPayload<'a> {
     fn as_ref(&self) -> &[u8] {
         self.span
     }
@@ -17,8 +17,8 @@ impl AsRef<[u8]> for WormholeCctpPayload<'_> {
 impl<'a> TryFrom<Payload<'a>> for WormholeCctpPayload<'a> {
     type Error = &'static str;
 
-    fn try_from(payload: Payload<'a>) -> Result<WormholeCctpPayload<'a>, &'static str> {
-        WormholeCctpPayload::parse(payload.span)
+    fn try_from(payload: Payload<'a>) -> Result<Self, &'static str> {
+        Self::parse(payload.0)
     }
 }
 
@@ -31,35 +31,37 @@ impl<'a> WormholeCctpPayload<'a> {
         self.message
     }
 
-    pub fn parse(span: &'a [u8]) -> Result<WormholeCctpPayload<'a>, &'static str> {
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.is_empty() {
             return Err("WormholeCctpPayload span too short. Need at least 1 byte");
         }
 
         let message = WormholeCctpMessage::parse(span)?;
 
-        Ok(WormholeCctpPayload { span, message })
+        Ok(Self { span, message })
     }
 }
 
 /// The non-type-flag contents
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum WormholeCctpMessage<'a> {
-    DepositWithMessage(DepositWithMessage<'a>),
+    Deposit(Deposit<'a>),
+    ReservedUnknown(&'a [u8]),
 }
 
 impl<'a> TryFrom<Payload<'a>> for WormholeCctpMessage<'a> {
     type Error = &'static str;
 
-    fn try_from(payload: Payload<'a>) -> Result<WormholeCctpMessage<'a>, &'static str> {
-        WormholeCctpMessage::parse(payload.span)
+    fn try_from(payload: Payload<'a>) -> Result<Self, &'static str> {
+        Self::parse(payload.0)
     }
 }
 
 impl AsRef<[u8]> for WormholeCctpMessage<'_> {
     fn as_ref(&self) -> &[u8] {
         match self {
-            WormholeCctpMessage::DepositWithMessage(inner) => inner.as_ref(),
+            Self::Deposit(inner) => inner.as_ref(),
+            Self::ReservedUnknown(inner) => inner,
         }
     }
 }
@@ -69,9 +71,10 @@ impl<'a> WormholeCctpMessage<'a> {
         self.as_ref()
     }
 
-    pub fn deposit_with_message(&self) -> Option<&DepositWithMessage> {
+    pub fn deposit_with_message(&self) -> Option<&Deposit> {
         match self {
-            WormholeCctpMessage::DepositWithMessage(inner) => Some(inner),
+            Self::Deposit(inner) => Some(inner),
+            _ => None,
         }
     }
 
@@ -81,9 +84,8 @@ impl<'a> WormholeCctpMessage<'a> {
         }
 
         match span[0] {
-            1 => Ok(WormholeCctpMessage::DepositWithMessage(
-                DepositWithMessage::parse(&span[1..])?,
-            )),
+            1 => Ok(Self::Deposit(Deposit::parse(&span[1..])?)),
+            2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 => Ok(Self::ReservedUnknown(&span[1..])),
             _ => Err("Unknown WormholeCctpMessage type"),
         }
     }
@@ -91,66 +93,64 @@ impl<'a> WormholeCctpMessage<'a> {
 
 /// A CCTP deposit transfer with message
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct DepositWithMessage<'a> {
-    span: &'a [u8],
-}
+pub struct Deposit<'a>(&'a [u8]);
 
-impl AsRef<[u8]> for DepositWithMessage<'_> {
+impl AsRef<[u8]> for Deposit<'_> {
     fn as_ref(&self) -> &[u8] {
-        self.span
+        self.0
     }
 }
 
-impl<'a> DepositWithMessage<'a> {
+impl<'a> Deposit<'a> {
     pub fn token_address(&self) -> [u8; 32] {
-        self.span[..32].try_into().unwrap()
+        self.0[..32].try_into().unwrap()
     }
 
     pub fn amount(&self) -> [u8; 32] {
-        self.span[32..64].try_into().unwrap()
+        self.0[32..64].try_into().unwrap()
     }
 
     pub fn source_cctp_domain(&self) -> u32 {
-        u32::from_be_bytes(self.span[64..68].try_into().unwrap())
+        u32::from_be_bytes(self.0[64..68].try_into().unwrap())
     }
 
-    pub fn target_cctp_domain(&self) -> u32 {
-        u32::from_be_bytes(self.span[68..72].try_into().unwrap())
+    pub fn destination_cctp_domain(&self) -> u32 {
+        u32::from_be_bytes(self.0[68..72].try_into().unwrap())
     }
 
     pub fn cctp_nonce(&self) -> u64 {
-        u64::from_be_bytes(self.span[72..80].try_into().unwrap())
+        u64::from_be_bytes(self.0[72..80].try_into().unwrap())
     }
 
     pub fn burn_source(&self) -> [u8; 32] {
-        self.span[80..112].try_into().unwrap()
+        self.0[80..112].try_into().unwrap()
     }
 
     pub fn mint_recipient(&self) -> [u8; 32] {
-        self.span[112..144].try_into().unwrap()
+        self.0[112..144].try_into().unwrap()
     }
 
     pub fn payload_len(&self) -> u16 {
-        u16::from_be_bytes(self.span[144..146].try_into().unwrap())
+        u16::from_be_bytes(self.0[144..146].try_into().unwrap())
     }
 
     pub fn payload(&self) -> &[u8] {
-        &self.span[146..]
+        &self.0[146..]
     }
 
-    pub fn parse(span: &'a [u8]) -> Result<DepositWithMessage<'a>, &'static str> {
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.len() < 146 {
-            return Err("DepositWithMessage span too short. Need at least 146 bytes");
+            return Err("Deposit span too short. Need at least 146 bytes");
         }
 
-        let deposit = DepositWithMessage { span };
+        let deposit = Self(span);
 
         // Check payload length vs actual payload.
-        if usize::from(deposit.payload_len()) != deposit.payload().len() {
-            return Err("DepositWithMessage payload length mismatch");
+        if deposit.payload().len() != deposit.payload_len().into() {
+            return Err("Deposit payload length mismatch");
         }
 
-        Ok(DepositWithMessage { span })
+        Ok(deposit)
     }
 }
 
@@ -189,7 +189,7 @@ mod test {
             hex!("0000000000000000000000000000000000000000000000000000000005f5e100")
         );
         assert_eq!(deposit.source_cctp_domain(), 1);
-        assert_eq!(deposit.target_cctp_domain(), 0);
+        assert_eq!(deposit.destination_cctp_domain(), 0);
         assert_eq!(deposit.cctp_nonce(), 6668);
         assert_eq!(
             deposit.burn_source(),
@@ -221,6 +221,6 @@ mod test {
         let err = WormholeCctpPayload::try_from(raw_vaa.payload())
             .err()
             .unwrap();
-        assert_eq!(err, "DepositWithMessage payload length mismatch");
+        assert_eq!(err, "Deposit payload length mismatch");
     }
 }

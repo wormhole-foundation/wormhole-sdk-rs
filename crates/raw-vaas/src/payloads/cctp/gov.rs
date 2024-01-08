@@ -11,7 +11,7 @@ pub struct WormholeCctpGovPayload<'a> {
     decree: WormholeCctpDecree<'a>,
 }
 
-impl AsRef<[u8]> for WormholeCctpGovPayload<'_> {
+impl<'a> AsRef<[u8]> for WormholeCctpGovPayload<'a> {
     fn as_ref(&self) -> &[u8] {
         self.span
     }
@@ -20,8 +20,8 @@ impl AsRef<[u8]> for WormholeCctpGovPayload<'_> {
 impl<'a> TryFrom<Payload<'a>> for WormholeCctpGovPayload<'a> {
     type Error = &'static str;
 
-    fn try_from(payload: Payload<'a>) -> Result<WormholeCctpGovPayload<'a>, &'static str> {
-        WormholeCctpGovPayload::parse(payload.span)
+    fn try_from(payload: Payload<'a>) -> Result<Self, &'static str> {
+        Self::parse(payload.0)
     }
 }
 
@@ -34,7 +34,7 @@ impl<'a> WormholeCctpGovPayload<'a> {
         self.decree
     }
 
-    pub fn parse(span: &[u8]) -> Result<WormholeCctpGovPayload, &'static str> {
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.is_empty() {
             return Err("WormholeCctpGovPayload span too short. Need at least 1 byte");
         }
@@ -45,7 +45,7 @@ impl<'a> WormholeCctpGovPayload<'a> {
 
         let decree = WormholeCctpDecree::parse(&span[32..])?;
 
-        Ok(WormholeCctpGovPayload { span, decree })
+        Ok(Self { span, decree })
     }
 }
 
@@ -57,12 +57,12 @@ pub enum WormholeCctpDecree<'a> {
     ContractUpgrade(ContractUpgrade<'a>),
 }
 
-impl AsRef<[u8]> for WormholeCctpDecree<'_> {
+impl<'a> AsRef<[u8]> for WormholeCctpDecree<'a> {
     fn as_ref(&self) -> &[u8] {
         match self {
-            WormholeCctpDecree::UpdateWormholeFinality(inner) => inner.as_ref(),
-            WormholeCctpDecree::RegisterEmitterAndDomain(inner) => inner.as_ref(),
-            WormholeCctpDecree::ContractUpgrade(inner) => inner.as_ref(),
+            Self::UpdateWormholeFinality(inner) => inner.as_ref(),
+            Self::RegisterEmitterAndDomain(inner) => inner.as_ref(),
+            Self::ContractUpgrade(inner) => inner.as_ref(),
         }
     }
 }
@@ -70,8 +70,8 @@ impl AsRef<[u8]> for WormholeCctpDecree<'_> {
 impl<'a> TryFrom<&'a [u8]> for WormholeCctpDecree<'a> {
     type Error = &'static str;
 
-    fn try_from(span: &'a [u8]) -> Result<WormholeCctpDecree<'a>, &'static str> {
-        WormholeCctpDecree::parse(span)
+    fn try_from(span: &'a [u8]) -> Result<Self, &'static str> {
+        Self::parse(span)
     }
 }
 
@@ -82,21 +82,21 @@ impl<'a> WormholeCctpDecree<'a> {
 
     pub fn update_wormhole_finality(&self) -> Option<&UpdateWormholeFinality> {
         match self {
-            WormholeCctpDecree::UpdateWormholeFinality(inner) => Some(inner),
+            Self::UpdateWormholeFinality(inner) => Some(inner),
             _ => None,
         }
     }
 
     pub fn register_emitter_and_domain(&self) -> Option<&RegisterEmitterAndDomain> {
         match self {
-            WormholeCctpDecree::RegisterEmitterAndDomain(inner) => Some(inner),
+            Self::RegisterEmitterAndDomain(inner) => Some(inner),
             _ => None,
         }
     }
 
     pub fn contract_upgrade(&self) -> Option<&ContractUpgrade> {
         match self {
-            WormholeCctpDecree::ContractUpgrade(inner) => Some(inner),
+            Self::ContractUpgrade(inner) => Some(inner),
             _ => None,
         }
     }
@@ -107,9 +107,9 @@ impl<'a> WormholeCctpDecree<'a> {
         }
 
         let decree = match span[0] {
-            1 => WormholeCctpDecree::UpdateWormholeFinality(TryFrom::try_from(&span[1..])?),
-            2 => WormholeCctpDecree::RegisterEmitterAndDomain(TryFrom::try_from(&span[1..])?),
-            3 => WormholeCctpDecree::ContractUpgrade(TryFrom::try_from(&span[1..])?),
+            1 => Self::UpdateWormholeFinality(TryFrom::try_from(&span[1..])?),
+            2 => Self::RegisterEmitterAndDomain(TryFrom::try_from(&span[1..])?),
+            3 => Self::ContractUpgrade(TryFrom::try_from(&span[1..])?),
             _ => {
                 return Err("Invalid Wormhole CCTP decree");
             }
@@ -121,123 +121,117 @@ impl<'a> WormholeCctpDecree<'a> {
 
 /// Update Wormhole finality
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct UpdateWormholeFinality<'a> {
-    pub(crate) span: &'a [u8],
-}
+pub struct UpdateWormholeFinality<'a>(&'a [u8]);
 
 impl AsRef<[u8]> for UpdateWormholeFinality<'_> {
     fn as_ref(&self) -> &[u8] {
-        self.span
+        self.0
     }
 }
 
 impl<'a> TryFrom<&'a [u8]> for UpdateWormholeFinality<'a> {
     type Error = &'static str;
 
-    fn try_from(span: &'a [u8]) -> Result<UpdateWormholeFinality<'a>, &'static str> {
-        UpdateWormholeFinality::parse(span)
+    fn try_from(span: &'a [u8]) -> Result<Self, &'static str> {
+        Self::parse(span)
     }
 }
 
 impl<'a> UpdateWormholeFinality<'a> {
     pub fn chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[..2].try_into().unwrap())
+        u16::from_be_bytes(self.0[..2].try_into().unwrap())
     }
 
     pub fn finality(&self) -> u8 {
-        self.span[2]
+        self.0[2]
     }
 
-    pub fn parse(span: &'a [u8]) -> Result<UpdateWormholeFinality<'a>, &'static str> {
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.len() != 3 {
             return Err("UpdateWormholeFinality span too short. Need exactly 3 bytes");
         }
 
-        Ok(UpdateWormholeFinality { span: &span[..3] })
+        Ok(Self(&span[..3]))
     }
 }
 
 /// Register emitter and CCTP domain
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct RegisterEmitterAndDomain<'a> {
-    span: &'a [u8],
-}
+pub struct RegisterEmitterAndDomain<'a>(&'a [u8]);
 
 impl AsRef<[u8]> for RegisterEmitterAndDomain<'_> {
     fn as_ref(&self) -> &[u8] {
-        self.span
+        self.0
     }
 }
 
 impl<'a> TryFrom<&'a [u8]> for RegisterEmitterAndDomain<'a> {
     type Error = &'static str;
 
-    fn try_from(span: &'a [u8]) -> Result<RegisterEmitterAndDomain<'a>, &'static str> {
-        RegisterEmitterAndDomain::parse(span)
+    fn try_from(span: &'a [u8]) -> Result<Self, &'static str> {
+        Self::parse(span)
     }
 }
 
 impl<'a> RegisterEmitterAndDomain<'a> {
     pub fn chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[..2].try_into().unwrap())
+        u16::from_be_bytes(self.0[..2].try_into().unwrap())
     }
 
     pub fn foreign_chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[2..4].try_into().unwrap())
+        u16::from_be_bytes(self.0[2..4].try_into().unwrap())
     }
 
     pub fn foreign_emitter(&self) -> [u8; 32] {
-        self.span[4..36].try_into().unwrap()
+        self.0[4..36].try_into().unwrap()
     }
 
     pub fn cctp_domain(&self) -> u32 {
-        u32::from_be_bytes(self.span[36..40].try_into().unwrap())
+        u32::from_be_bytes(self.0[36..40].try_into().unwrap())
     }
 
-    pub fn parse(span: &'a [u8]) -> Result<RegisterEmitterAndDomain<'a>, &'static str> {
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.len() != 40 {
             return Err("RegisterEmitterAndDomain span too short. Need exactly 40 bytes");
         }
 
-        Ok(RegisterEmitterAndDomain { span: &span[..40] })
+        Ok(Self(&span[..40]))
     }
 }
 
 /// Upgrade a contract
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct ContractUpgrade<'a> {
-    span: &'a [u8],
-}
+pub struct ContractUpgrade<'a>(&'a [u8]);
 
 impl AsRef<[u8]> for ContractUpgrade<'_> {
     fn as_ref(&self) -> &[u8] {
-        self.span
+        self.0
     }
 }
 
 impl<'a> TryFrom<&'a [u8]> for ContractUpgrade<'a> {
     type Error = &'static str;
 
-    fn try_from(span: &'a [u8]) -> Result<ContractUpgrade<'a>, &'static str> {
-        ContractUpgrade::parse(span)
+    fn try_from(span: &'a [u8]) -> Result<Self, &'static str> {
+        Self::parse(span)
     }
 }
 
 impl<'a> ContractUpgrade<'a> {
     pub fn chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[..2].try_into().unwrap())
+        u16::from_be_bytes(self.0[..2].try_into().unwrap())
     }
 
     pub fn implementation(&self) -> [u8; 32] {
-        self.span[2..34].try_into().unwrap()
+        self.0[2..34].try_into().unwrap()
     }
 
-    pub fn parse(span: &'a [u8]) -> Result<ContractUpgrade<'a>, &'static str> {
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.len() != 34 {
             return Err("ContractUpgrade span too short. Need exactly 34 bytes");
         }
 
-        Ok(ContractUpgrade { span: &span[..34] })
+        Ok(Self(&span[..34]))
     }
 }
 

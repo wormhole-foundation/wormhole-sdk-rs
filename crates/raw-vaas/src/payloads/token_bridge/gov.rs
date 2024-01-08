@@ -10,7 +10,7 @@ pub struct TokenBridgeGovPayload<'a> {
     decree: TokenBridgeDecree<'a>,
 }
 
-impl AsRef<[u8]> for TokenBridgeGovPayload<'_> {
+impl<'a> AsRef<[u8]> for TokenBridgeGovPayload<'a> {
     fn as_ref(&self) -> &[u8] {
         self.span
     }
@@ -19,8 +19,8 @@ impl AsRef<[u8]> for TokenBridgeGovPayload<'_> {
 impl<'a> TryFrom<Payload<'a>> for TokenBridgeGovPayload<'a> {
     type Error = &'static str;
 
-    fn try_from(payload: Payload<'a>) -> Result<TokenBridgeGovPayload<'a>, &'static str> {
-        TokenBridgeGovPayload::parse(payload.span)
+    fn try_from(payload: Payload<'a>) -> Result<Self, &'static str> {
+        Self::parse(payload.0)
     }
 }
 
@@ -33,7 +33,7 @@ impl<'a> TokenBridgeGovPayload<'a> {
         self.decree
     }
 
-    pub fn parse(span: &[u8]) -> Result<TokenBridgeGovPayload, &'static str> {
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.is_empty() {
             return Err("TokenBridgeGovPayload span too short. Need at least 1 byte");
         }
@@ -44,7 +44,7 @@ impl<'a> TokenBridgeGovPayload<'a> {
 
         let decree = TokenBridgeDecree::parse(&span[32..])?;
 
-        Ok(TokenBridgeGovPayload { span, decree })
+        Ok(Self { span, decree })
     }
 }
 
@@ -59,9 +59,9 @@ pub enum TokenBridgeDecree<'a> {
 impl AsRef<[u8]> for TokenBridgeDecree<'_> {
     fn as_ref(&self) -> &[u8] {
         match self {
-            TokenBridgeDecree::RegisterChain(inner) => inner.as_ref(),
-            TokenBridgeDecree::ContractUpgrade(inner) => inner.as_ref(),
-            TokenBridgeDecree::RecoverChainId(inner) => inner.as_ref(),
+            Self::RegisterChain(inner) => inner.as_ref(),
+            Self::ContractUpgrade(inner) => inner.as_ref(),
+            Self::RecoverChainId(inner) => inner.as_ref(),
         }
     }
 }
@@ -69,8 +69,8 @@ impl AsRef<[u8]> for TokenBridgeDecree<'_> {
 impl<'a> TryFrom<&'a [u8]> for TokenBridgeDecree<'a> {
     type Error = &'static str;
 
-    fn try_from(span: &'a [u8]) -> Result<TokenBridgeDecree<'a>, &'static str> {
-        TokenBridgeDecree::parse(span)
+    fn try_from(span: &'a [u8]) -> Result<Self, &'static str> {
+        Self::parse(span)
     }
 }
 
@@ -106,9 +106,9 @@ impl<'a> TokenBridgeDecree<'a> {
         }
 
         let decree = match span[0] {
-            1 => TokenBridgeDecree::RegisterChain(TryFrom::try_from(&span[1..])?),
-            2 => TokenBridgeDecree::ContractUpgrade(TryFrom::try_from(&span[1..])?),
-            3 => TokenBridgeDecree::RecoverChainId(TryFrom::try_from(&span[1..])?),
+            1 => Self::RegisterChain(TryFrom::try_from(&span[1..])?),
+            2 => Self::ContractUpgrade(TryFrom::try_from(&span[1..])?),
+            3 => Self::RecoverChainId(TryFrom::try_from(&span[1..])?),
             _ => {
                 return Err("Invalid Token Bridge decree");
             }
@@ -120,34 +120,32 @@ impl<'a> TokenBridgeDecree<'a> {
 
 /// Register a new chain
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct RegisterChain<'a> {
-    pub(crate) span: &'a [u8],
-}
+pub struct RegisterChain<'a>(&'a [u8]);
 
-impl AsRef<[u8]> for RegisterChain<'_> {
+impl<'a> AsRef<[u8]> for RegisterChain<'a> {
     fn as_ref(&self) -> &[u8] {
-        self.span
+        self.0
     }
 }
 
 impl<'a> TryFrom<&'a [u8]> for RegisterChain<'a> {
     type Error = &'static str;
 
-    fn try_from(span: &'a [u8]) -> Result<RegisterChain<'a>, &'static str> {
-        RegisterChain::parse(span)
+    fn try_from(span: &'a [u8]) -> Result<Self, &'static str> {
+        Self::parse(span)
     }
 }
 
 impl<'a> RegisterChain<'a> {
     pub fn foreign_chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[2..4].try_into().unwrap())
+        u16::from_be_bytes(self.0[2..4].try_into().unwrap())
     }
 
     pub fn foreign_emitter(&self) -> [u8; 32] {
-        self.span[4..36].try_into().unwrap()
+        self.0[4..36].try_into().unwrap()
     }
 
-    pub fn parse(span: &'a [u8]) -> Result<RegisterChain<'a>, &'static str> {
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.len() != 36 {
             return Err("RegisterChain span too short. Need exactly 36 bytes");
         }
@@ -156,87 +154,83 @@ impl<'a> RegisterChain<'a> {
             return Err("RegisterChain target chain must be 0");
         }
 
-        Ok(RegisterChain { span: &span[..36] })
+        Ok(Self(&span[..36]))
     }
 }
 
 /// Upgrade a contract
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct ContractUpgrade<'a> {
-    span: &'a [u8],
-}
+pub struct ContractUpgrade<'a>(&'a [u8]);
 
-impl AsRef<[u8]> for ContractUpgrade<'_> {
+impl<'a> AsRef<[u8]> for ContractUpgrade<'a> {
     fn as_ref(&self) -> &[u8] {
-        self.span
+        self.0
     }
 }
 
 impl<'a> TryFrom<&'a [u8]> for ContractUpgrade<'a> {
     type Error = &'static str;
 
-    fn try_from(span: &'a [u8]) -> Result<ContractUpgrade<'a>, &'static str> {
-        ContractUpgrade::parse(span)
+    fn try_from(span: &'a [u8]) -> Result<Self, &'static str> {
+        Self::parse(span)
     }
 }
 
 impl<'a> ContractUpgrade<'a> {
     pub fn chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[..2].try_into().unwrap())
+        u16::from_be_bytes(self.0[..2].try_into().unwrap())
     }
 
     pub fn implementation(&self) -> [u8; 32] {
-        self.span[2..34].try_into().unwrap()
+        self.0[2..34].try_into().unwrap()
     }
 
-    pub fn parse(span: &'a [u8]) -> Result<ContractUpgrade<'a>, &'static str> {
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.len() != 34 {
             return Err("ContractUpgrade span too short. Need exactly 34 bytes");
         }
 
-        Ok(ContractUpgrade { span: &span[..34] })
+        Ok(Self(&span[..34]))
     }
 }
 
 /// Recover a chain ID
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct RecoverChainId<'a> {
-    span: &'a [u8],
-}
+pub struct RecoverChainId<'a>(&'a [u8]);
 
-impl AsRef<[u8]> for RecoverChainId<'_> {
+impl<'a> AsRef<[u8]> for RecoverChainId<'a> {
     fn as_ref(&self) -> &[u8] {
-        self.span
+        self.0
     }
 }
 
 impl<'a> TryFrom<&'a [u8]> for RecoverChainId<'a> {
     type Error = &'static str;
 
-    fn try_from(span: &'a [u8]) -> Result<RecoverChainId<'a>, &'static str> {
-        RecoverChainId::parse(span)
+    fn try_from(span: &'a [u8]) -> Result<Self, &'static str> {
+        Self::parse(span)
     }
 }
 
 impl<'a> RecoverChainId<'a> {
     pub fn recovered_chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[..2].try_into().unwrap())
+        u16::from_be_bytes(self.0[..2].try_into().unwrap())
     }
 
     pub fn evm_chain_id(&self) -> [u8; 32] {
-        self.span[2..34].try_into().unwrap()
+        self.0[2..34].try_into().unwrap()
     }
 
     pub fn new_chain(&self) -> u16 {
-        u16::from_be_bytes(self.span[34..36].try_into().unwrap())
+        u16::from_be_bytes(self.0[34..36].try_into().unwrap())
     }
 
-    pub fn parse(span: &'a [u8]) -> Result<RecoverChainId<'a>, &'static str> {
+    pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
         if span.len() != 36 {
             return Err("RecoverChainId span too short. Need exactly 36 bytes");
         }
 
-        Ok(RecoverChainId { span: &span[..36] })
+        Ok(Self(&span[..36]))
     }
 }
 
