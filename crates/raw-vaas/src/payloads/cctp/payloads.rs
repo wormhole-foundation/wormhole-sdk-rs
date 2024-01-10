@@ -141,8 +141,8 @@ impl<'a> Deposit<'a> {
         u16::from_be_bytes(self.0[144..146].try_into().unwrap())
     }
 
-    pub fn payload(&self) -> &[u8] {
-        &self.0[146..]
+    pub fn payload(&'a self) -> Payload<'a> {
+        Payload::parse(&self.0[146..])
     }
 
     pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
@@ -207,7 +207,7 @@ mod test {
             hex!("00000000000000000000000068742c08bd367031216aa14725bd347e49be895b")
         );
         assert_eq!(deposit.payload_len(), 0);
-        assert_eq!(deposit.payload(), &[]);
+        assert_eq!(<&[u8]>::from(deposit.payload()), &[]);
     }
 
     #[test]

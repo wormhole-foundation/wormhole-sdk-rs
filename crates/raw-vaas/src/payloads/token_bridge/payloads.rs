@@ -278,8 +278,8 @@ impl<'a> TransferWithMessage<'a> {
         self.0[100..132].try_into().unwrap()
     }
 
-    pub fn payload(&self) -> &[u8] {
-        &self.0[132..]
+    pub fn payload(&'a self) -> Payload<'a> {
+        Payload::parse(&self.0[132..])
     }
 
     pub fn parse(span: &'a [u8]) -> Result<Self, &'static str> {
