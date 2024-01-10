@@ -202,6 +202,12 @@ impl<'a> From<&'a [u8]> for Payload<'a> {
     }
 }
 
+impl<'a> From<Payload<'a>> for &'a [u8] {
+    fn from(value: Payload<'a>) -> Self {
+        value.0
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct GuardianSetSig<'a>(pub(crate) &'a [u8]);
 

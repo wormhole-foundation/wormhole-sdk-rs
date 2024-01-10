@@ -102,7 +102,7 @@ impl<'a> WormholeCctpMessage<'a> {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Deposit<'a>(&'a [u8]);
 
-impl AsRef<[u8]> for Deposit<'_> {
+impl<'a> AsRef<[u8]> for Deposit<'a> {
     fn as_ref(&self) -> &[u8] {
         self.0
     }
