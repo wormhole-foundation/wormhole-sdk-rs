@@ -197,21 +197,21 @@ impl_for_int_array!(i128);
 /// Wrapper for `Vec<u8>`. Encoding is similar to Borsh, where the length is encoded as u32 (but in
 /// this case, it's big endian).
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct VariableBytes(pub Vec<u8>);
+pub struct WriteableBytes(Vec<u8>);
 
-impl From<Vec<u8>> for VariableBytes {
+impl From<Vec<u8>> for WriteableBytes {
     fn from(vec: Vec<u8>) -> Self {
         Self(vec)
     }
 }
 
-impl From<VariableBytes> for Vec<u8> {
-    fn from(bytes: VariableBytes) -> Self {
+impl From<WriteableBytes> for Vec<u8> {
+    fn from(bytes: WriteableBytes) -> Self {
         bytes.0
     }
 }
 
-impl std::ops::Deref for VariableBytes {
+impl std::ops::Deref for WriteableBytes {
     type Target = Vec<u8>;
 
     fn deref(&self) -> &Self::Target {
@@ -219,13 +219,13 @@ impl std::ops::Deref for VariableBytes {
     }
 }
 
-impl std::ops::DerefMut for VariableBytes {
+impl std::ops::DerefMut for WriteableBytes {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl Readable for VariableBytes {
+impl Readable for WriteableBytes {
     const SIZE: Option<usize> = None;
 
     fn read<R>(reader: &mut R) -> io::Result<Self>
@@ -233,14 +233,14 @@ impl Readable for VariableBytes {
         Self: Sized,
         R: io::Read,
     {
-        let len = usize::try_from(u32::read(reader)?).expect("usize overflow");
-        let mut buf = vec![0u8; len];
+        let len = u32::read(reader)?;
+        let mut buf = vec![0u8; len.try_into().expect("usize overflow")];
         reader.read_exact(&mut buf)?;
         Ok(Self(buf))
     }
 }
 
-impl Writeable for VariableBytes {
+impl Writeable for WriteableBytes {
     fn written_size(&self) -> usize {
         4 + self.0.len()
     }
@@ -411,7 +411,7 @@ pub mod test {
     #[test]
     fn variable_bytes_read_write() {
         let data = b"All your base are belong to us.";
-        let bytes = VariableBytes(data.to_vec());
+        let bytes = WriteableBytes(data.to_vec());
 
         let mut encoded = Vec::<u8>::with_capacity(bytes.written_size());
         let mut writer = std::io::Cursor::new(&mut encoded);
