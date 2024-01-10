@@ -194,6 +194,10 @@ impl<'a> Payload<'a> {
     pub fn parse(span: &'a [u8]) -> Self {
         Self(span)
     }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
 }
 
 impl<'a> From<&'a [u8]> for Payload<'a> {
