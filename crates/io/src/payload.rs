@@ -62,7 +62,7 @@ pub trait TypePrefixedPayload: Readable + Writeable + Clone + std::fmt::Debug {
 
 #[cfg(test)]
 mod test {
-    use crate::{Readable, TypePrefixedPayload, VariableBytes, Writeable};
+    use crate::{Readable, TypePrefixedPayload, Writeable, WriteableBytes};
     use hex_literal::hex;
 
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -72,7 +72,7 @@ mod test {
     pub struct Message {
         pub a: u32,
         pub b: NineteenBytes,
-        pub c: VariableBytes,
+        pub c: WriteableBytes,
         pub d: [u64; 4],
         pub e: bool,
     }
