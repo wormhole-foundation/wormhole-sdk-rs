@@ -54,6 +54,12 @@ pub trait TypePrefixedPayload: Readable + Writeable + Clone + std::fmt::Debug {
         }
     }
 
+    /// Read the payload as a slice. Under the hood, this uses
+    /// [read_payload](TypePrefixedPayload::read_payload).
+    fn read_slice(buf: &[u8]) -> Result<Self, io::Error> {
+        Self::read_payload(&mut &buf[..])
+    }
+
     /// Write the payload, including the type prefix if applicable.
     fn write_payload<W: io::Write>(&self, writer: &mut W) -> Result<(), io::Error> {
         match Self::TYPE {
@@ -174,5 +180,21 @@ mod test {
             Message::read_payload(&mut cursor).unwrap_err().kind(),
             std::io::ErrorKind::InvalidData,
         ));
+    }
+
+    #[test]
+    fn read_slice() {
+        let encoded = hex!("45000001a4ba5edba5edba5edba5edba5edba5edba5edba50000001c536f6d65626f6479207365742075732075702074686520626f6d622e000000000000004500000000000000450000000000000045000000000000004501");
+
+        let expected = Message {
+            a: 420,
+            b: NineteenBytes(hex!("ba5edba5edba5edba5edba5edba5edba5edba5")),
+            c: b"Somebody set us up the bomb.".to_vec().into(),
+            d: [0x45; 4],
+            e: true,
+        };
+
+        let decoded = Message::read_slice(&encoded).unwrap();
+        assert_eq!(decoded, expected);
     }
 }
