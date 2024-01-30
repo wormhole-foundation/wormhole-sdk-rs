@@ -30,21 +30,23 @@ pub trait TypePrefixedPayload: Readable + Writeable + Clone + std::fmt::Debug {
     }
 
     /// Read the payload, including the type prefix if applicable.
-    ///
-    /// NOTE: This method will drain the reader to make sure there is nothing,
-    /// which means an unexpected amount of heap will be allocated if the
-    /// reader has bytes left over.
     fn read_payload<R: io::Read>(reader: &mut R) -> Result<Self, io::Error> {
-        let out = match Self::TYPE {
-            Some(_) => Self::read_typed(reader)?,
-            None => Readable::read(reader)?,
-        };
+        match Self::TYPE {
+            Some(_) => Self::read_typed(reader),
+            None => Readable::read(reader),
+        }
+    }
 
-        // Drain reader to make sure there is nothing left.
-        let mut remaining = Vec::new();
-        reader.read_to_end(&mut remaining)?;
+    /// Read the payload as a slice. Under the hood, this uses
+    /// [read_payload](TypePrefixedPayload::read_payload).
+    ///
+    /// NOTE: This method will check that the slice is empty after reading the
+    /// payload.
+    fn read_slice(buf: &[u8]) -> Result<Self, io::Error> {
+        let buf = &mut &buf[..];
+        let out = Self::read_payload(buf)?;
 
-        if remaining.is_empty() {
+        if buf.is_empty() {
             Ok(out)
         } else {
             Err(io::Error::new(
@@ -52,12 +54,6 @@ pub trait TypePrefixedPayload: Readable + Writeable + Clone + std::fmt::Debug {
                 "Invalid payload length",
             ))
         }
-    }
-
-    /// Read the payload as a slice. Under the hood, this uses
-    /// [read_payload](TypePrefixedPayload::read_payload).
-    fn read_slice(buf: &[u8]) -> Result<Self, io::Error> {
-        Self::read_payload(&mut &buf[..])
     }
 
     /// Write the payload, including the type prefix if applicable.
@@ -162,22 +158,10 @@ mod test {
 
     #[test]
     fn invalid_length() {
-        let msg = Message {
-            a: 420,
-            b: NineteenBytes(hex!("ba5edba5edba5edba5edba5edba5edba5edba5")),
-            c: b"Somebody set us up the bomb.".to_vec().into(),
-            d: [0x45; 4],
-            e: true,
-        };
-
-        let mut encoded = msg.to_vec_payload();
-        encoded.push(69);
-        assert_eq!(encoded, hex!("45000001a4ba5edba5edba5edba5edba5edba5edba5edba50000001c536f6d65626f6479207365742075732075702074686520626f6d622e00000000000000450000000000000045000000000000004500000000000000450145"));
-
-        let mut cursor = std::io::Cursor::new(&mut encoded);
+        let encoded = hex!("45000001a4ba5edba5edba5edba5edba5edba5edba5edba50000001c536f6d65626f6479207365742075732075702074686520626f6d622e00000000000000450000000000000045000000000000004500000000000000450169");
 
         assert!(matches!(
-            Message::read_payload(&mut cursor).unwrap_err().kind(),
+            Message::read_slice(&encoded).unwrap_err().kind(),
             std::io::ErrorKind::InvalidData,
         ));
     }
