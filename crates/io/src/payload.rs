@@ -30,10 +30,27 @@ pub trait TypePrefixedPayload: Readable + Writeable + Clone + std::fmt::Debug {
     }
 
     /// Read the payload, including the type prefix if applicable.
+    ///
+    /// NOTE: This method will drain the reader to make sure there is nothing,
+    /// which means an unexpected amount of heap will be allocated if the
+    /// reader has bytes left over.
     fn read_payload<R: io::Read>(reader: &mut R) -> Result<Self, io::Error> {
-        match Self::TYPE {
-            Some(_) => Self::read_typed(reader),
-            None => Readable::read(reader),
+        let out = match Self::TYPE {
+            Some(_) => Self::read_typed(reader)?,
+            None => Readable::read(reader)?,
+        };
+
+        // Drain reader to make sure there is nothing left.
+        let mut remaining = Vec::new();
+        reader.read_to_end(&mut remaining)?;
+
+        if remaining.is_empty() {
+            Ok(out)
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Invalid payload length",
+            ))
         }
     }
 
