@@ -153,4 +153,26 @@ mod test {
         let decoded = Message::read_typed(&mut cursor).unwrap();
         assert_eq!(msg, decoded);
     }
+
+    #[test]
+    fn invalid_length() {
+        let msg = Message {
+            a: 420,
+            b: NineteenBytes(hex!("ba5edba5edba5edba5edba5edba5edba5edba5")),
+            c: b"Somebody set us up the bomb.".to_vec().into(),
+            d: [0x45; 4],
+            e: true,
+        };
+
+        let mut encoded = msg.to_vec_payload();
+        encoded.push(69);
+        assert_eq!(encoded, hex!("45000001a4ba5edba5edba5edba5edba5edba5edba5edba50000001c536f6d65626f6479207365742075732075702074686520626f6d622e00000000000000450000000000000045000000000000004500000000000000450145"));
+
+        let mut cursor = std::io::Cursor::new(&mut encoded);
+
+        assert!(matches!(
+            Message::read_payload(&mut cursor).unwrap_err().kind(),
+            std::io::ErrorKind::InvalidData,
+        ));
+    }
 }
