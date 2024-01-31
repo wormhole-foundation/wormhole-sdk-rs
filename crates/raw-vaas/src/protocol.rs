@@ -202,6 +202,10 @@ impl<'a> Payload<'a> {
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
 }
 
 impl<'a> From<&'a [u8]> for Payload<'a> {
