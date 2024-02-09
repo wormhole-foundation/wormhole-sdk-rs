@@ -25,7 +25,7 @@ jobs:
                   toolchain: ${{ matrix.rust }}
             - uses: Swatinem/rust-cache@v2
             - name: test
-              run: cargo test --workspace ${{ matrix.flags }}
+              run: cd universal && cargo test --workspace ${{ matrix.flags }}
 
     clippy:
         name: clippy
@@ -34,7 +34,7 @@ jobs:
         steps:
             - uses: actions/checkout@v3
             - uses: dtolnay/rust-toolchain@clippy
-            - run: cargo clippy --workspace --all-targets
+            - run: cd universal && cargo clippy --workspace --all-targets
               env:
                   RUSTFLAGS: -Dwarnings
 
@@ -47,7 +47,7 @@ jobs:
             - uses: dtolnay/rust-toolchain@nightly
               with:
                   components: rust-docs
-            - run: cargo doc --workspace --no-deps --document-private-items
+            - run: cd universal && cargo doc --workspace --no-deps --document-private-items
               env:
                   RUSTDOCFLAGS: "--cfg docsrs -D warnings"
 
@@ -60,4 +60,4 @@ jobs:
             - uses: dtolnay/rust-toolchain@nightly
               with:
                   components: rustfmt
-            - run: cargo fmt --all --check
+            - run: cd universal && cargo fmt --all --check
