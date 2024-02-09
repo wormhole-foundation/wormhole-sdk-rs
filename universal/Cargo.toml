@@ -1,5 +1,8 @@
 [workspace]
-members = ["crates/*"]
+members = [
+    "io",
+    "raw-vaas"
+]
 resolver = "2"
 
 [workspace.package]
