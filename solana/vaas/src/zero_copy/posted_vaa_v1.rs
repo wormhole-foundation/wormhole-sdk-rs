@@ -5,6 +5,7 @@ use solana_program::{
 };
 use wormhole_raw_vaas::Payload;
 
+#[derive(Debug)]
 /// Account used to store a verified VAA.
 pub struct PostedVaaV1<'a>(Ref<'a, &'a mut [u8]>);
 

@@ -7,6 +7,7 @@ use wormhole_raw_vaas::Vaa;
 
 use crate::VaaVersion;
 
+#[derive(Debug)]
 /// Account used to warehouse VAA buffer.
 pub struct EncodedVaa<'a>(Ref<'a, &'a mut [u8]>);
 

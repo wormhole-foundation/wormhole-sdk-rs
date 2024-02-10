@@ -15,6 +15,7 @@ use super::VaaVersion;
 
 pub const VAA_VERSION: u8 = 1;
 
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum VaaAccount<'a> {
     PostedVaaV1(PostedVaaV1<'a>),
@@ -22,7 +23,7 @@ pub enum VaaAccount<'a> {
     EncodedVaa(EncodedVaa<'a>),
 }
 
-#[derive(Debug, BorshDeserialize, BorshSerialize, Copy, Clone)]
+#[derive(Debug, BorshDeserialize, BorshSerialize, Copy, Clone, PartialEq, Eq, Default)]
 pub struct EmitterInfo {
     pub chain: u16,
     pub address: [u8; 32],
