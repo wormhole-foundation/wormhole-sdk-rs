@@ -135,6 +135,16 @@ impl<'a> VaaAccount<'a> {
         }
     }
 
+    pub fn guardian_set_index(&self) -> u32 {
+        match self {
+            VaaAccount::PostedVaaV1(inner) => inner.guardian_set_index(),
+            #[cfg(feature = "experimental")]
+            VaaAccount::EncodedVaa(inner) => match inner.as_vaa() {
+                VaaVersion::V1(vaa) => vaa.guardian_set_index(),
+            },
+        }
+    }
+
     #[cfg(feature = "experimental")]
     pub fn encoded_vaa(&'a self) -> Option<&'a EncodedVaa<'a>> {
         match self {
