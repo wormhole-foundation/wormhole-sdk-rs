@@ -1,12 +1,6 @@
-#![cfg(any(feature = "on-chain", feature = "off-chain"))]
+//! Provides support for ruint.
 
-//! Provides support for EITHER ruint@1.9.0 OR alloy_primitives.
-
-#[cfg(feature = "ruint")]
 use ruint::Uint;
-
-#[cfg(not(feature = "ruint"))]
-use alloy_primitives::Uint;
 
 use crate::payloads::token_bridge::{Transfer, TransferWithMessage};
 
@@ -67,7 +61,6 @@ impl EncodedAmount {
     }
 }
 
-#[cfg(any(feature = "on-chain", feature = "off-chain"))]
 impl Transfer<'_> {
     pub fn encoded_amount(&self) -> EncodedAmount {
         self.amount().into()
@@ -78,7 +71,6 @@ impl Transfer<'_> {
     }
 }
 
-#[cfg(any(feature = "on-chain", feature = "off-chain"))]
 impl TransferWithMessage<'_> {
     pub fn encoded_amount(&self) -> EncodedAmount {
         self.amount().into()
