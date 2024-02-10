@@ -76,6 +76,26 @@ impl<'a> VaaAccount<'a> {
         }
     }
 
+    pub fn sequence(&self) -> u64 {
+        match self {
+            Self::PostedVaaV1(inner) => inner.sequence(),
+            #[cfg(feature = "experimental")]
+            Self::EncodedVaa(inner) => match inner.as_vaa() {
+                VaaVersion::V1(vaa) => vaa.body().sequence(),
+            },
+        }
+    }
+
+    pub fn consistency_level(&self) -> u8 {
+        match self {
+            Self::PostedVaaV1(inner) => inner.consistency_level(),
+            #[cfg(feature = "experimental")]
+            Self::EncodedVaa(inner) => match inner.as_vaa() {
+                VaaVersion::V1(vaa) => vaa.body().consistency_level(),
+            },
+        }
+    }
+
     pub fn timestamp(&self) -> u32 {
         match self {
             Self::PostedVaaV1(inner) => inner.timestamp(),
@@ -86,9 +106,19 @@ impl<'a> VaaAccount<'a> {
         }
     }
 
-    pub fn try_payload(&'a self) -> Payload<'a> {
+    pub fn nonce(&self) -> u32 {
         match self {
-            Self::PostedVaaV1(inner) => Payload::parse(inner.payload()),
+            Self::PostedVaaV1(inner) => inner.nonce(),
+            #[cfg(feature = "experimental")]
+            Self::EncodedVaa(inner) => match inner.as_vaa() {
+                VaaVersion::V1(vaa) => vaa.body().nonce(),
+            },
+        }
+    }
+
+    pub fn payload(&'a self) -> Payload<'a> {
+        match self {
+            Self::PostedVaaV1(inner) => inner.payload(),
             #[cfg(feature = "experimental")]
             Self::EncodedVaa(inner) => match inner.as_vaa() {
                 VaaVersion::V1(vaa) => vaa.body().payload(),
@@ -127,9 +157,9 @@ impl<'a> VaaAccount<'a> {
             Err(ProgramError::InvalidAccountData)
         } else {
             match <[u8; 8]>::try_from(&data[..8]).unwrap() {
+                [118, 97, 97, 1, _, _, _, _] => Ok(Self::PostedVaaV1(PostedVaaV1::new(acc_info)?)),
                 #[cfg(feature = "experimental")]
                 EncodedVaa::DISCRIMINATOR => Ok(Self::EncodedVaa(EncodedVaa::new(acc_info)?)),
-                [118, 97, 97, 1, _, _, _, _] => Ok(Self::PostedVaaV1(PostedVaaV1::new(acc_info)?)),
                 _ => Err(ProgramError::InvalidAccountData),
             }
         }

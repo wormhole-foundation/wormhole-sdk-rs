@@ -3,6 +3,7 @@ use std::cell::Ref;
 use solana_program::{
     account_info::AccountInfo, keccak, program_error::ProgramError, pubkey::Pubkey,
 };
+use wormhole_raw_vaas::Payload;
 
 /// Account used to store a verified VAA.
 pub struct PostedVaaV1<'a>(Ref<'a, &'a mut [u8]>);
@@ -65,8 +66,8 @@ impl<'a> PostedVaaV1<'a> {
     }
 
     /// Message payload.
-    pub fn payload(&self) -> &[u8] {
-        &self.0[Self::PAYLOAD_START..]
+    pub fn payload(&'a self) -> Payload<'a> {
+        Payload::parse(&self.0[Self::PAYLOAD_START..])
     }
 
     /// Recompute the message hash, which is used derive the PostedVaaV1 PDA address.
@@ -78,7 +79,7 @@ impl<'a> PostedVaaV1<'a> {
             &self.emitter_address(),
             &self.sequence().to_be_bytes(),
             &[self.consistency_level()],
-            self.payload(),
+            self.payload().as_ref(),
         ])
     }
 
