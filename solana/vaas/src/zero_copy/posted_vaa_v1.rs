@@ -115,4 +115,8 @@ impl<'a> PostedVaaV1<'a> {
             }
         }
     }
+
+    pub(super) fn new_unchecked(acc_info: &'a AccountInfo) -> Self {
+        Self(acc_info.data.borrow())
+    }
 }

@@ -49,7 +49,7 @@ impl<'a> EncodedVaa<'a> {
     pub fn as_vaa(&self) -> VaaVersion {
         match self.version() {
             super::VAA_VERSION => VaaVersion::V1(Vaa::parse(&self.0[Self::VAA_START..]).unwrap()),
-            _ => unreachable!(),
+            _ => panic!("unverified VAA"),
         }
     }
 
@@ -74,5 +74,9 @@ impl<'a> EncodedVaa<'a> {
         } else {
             Ok(parsed)
         }
+    }
+
+    pub(super) fn new_unchecked(acc_info: &'a AccountInfo) -> Self {
+        Self(acc_info.data.borrow())
     }
 }

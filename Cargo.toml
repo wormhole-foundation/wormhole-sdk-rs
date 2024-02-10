@@ -3,11 +3,11 @@ members = [
     "universal/io",
     "universal/raw-vaas",
     "solana/vaas"
-]
+, "solana/consts"]
 resolver = "2"
 
 [workspace.package]
-version = "0.2.0-alpha.3"
+version = "0.2.0-alpha.4"
 edition = "2021"
 authors = ["Wormhole Contributors"]
 license = "Apache-2.0"
@@ -21,6 +21,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [workspace.dependencies]
 hex-literal = "0.4.1"
+cfg-if = "1.0.0"
 
 ### Solana related
 solana-program = "1.16.16"
@@ -31,3 +32,4 @@ serde_json = "1.0.103"
 
 wormhole-io = { path = "universal/io" }
 wormhole-raw-vaas = { path = "universal/raw-vaas", version = "0.2.0-alpha.2" }
+wormhole-solana-consts = { path = "solana/consts", version = "0.2.0-alpha.2" }

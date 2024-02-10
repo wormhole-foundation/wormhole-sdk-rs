@@ -151,18 +151,36 @@ impl<'a> VaaAccount<'a> {
         }
     }
 
-    pub fn load(acc_info: &'a AccountInfo) -> Result<Self, ProgramError> {
-        let data = acc_info.try_borrow_data()?;
-
-        if data.len() <= 8 {
+    pub fn try_load(acc_info: &'a AccountInfo) -> Result<Self, ProgramError> {
+        // First check owner. TODO: Change this to InvalidAccountOwner when we bump to solana 1.17
+        if *acc_info.owner != wormhole_solana_consts::CORE_BRIDGE_PROGRAM_ID {
             Err(ProgramError::InvalidAccountData)
         } else {
-            match <[u8; 8]>::try_from(&data[..8]).unwrap() {
-                [118, 97, 97, 1, _, _, _, _] => Ok(Self::PostedVaaV1(PostedVaaV1::new(acc_info)?)),
-                #[cfg(feature = "experimental")]
-                EncodedVaa::DISCRIMINATOR => Ok(Self::EncodedVaa(EncodedVaa::new(acc_info)?)),
-                _ => Err(ProgramError::InvalidAccountData),
+            let data = acc_info.try_borrow_data()?;
+
+            if data.len() <= 8 {
+                Err(ProgramError::InvalidAccountData)
+            } else {
+                match <[u8; 8]>::try_from(&data[..8]).unwrap() {
+                    [118, 97, 97, 1, _, _, _, _] => {
+                        Ok(Self::PostedVaaV1(PostedVaaV1::new(acc_info)?))
+                    }
+                    #[cfg(feature = "experimental")]
+                    EncodedVaa::DISCRIMINATOR => Ok(Self::EncodedVaa(EncodedVaa::new(acc_info)?)),
+                    _ => Err(ProgramError::InvalidAccountData),
+                }
             }
+        }
+    }
+
+    pub fn load(acc_info: &'a AccountInfo) -> Self {
+        let data = acc_info.data.borrow();
+
+        match <[u8; 8]>::try_from(&data[..8]).unwrap() {
+            [118, 97, 97, 1, _, _, _, _] => Self::PostedVaaV1(PostedVaaV1::new_unchecked(acc_info)),
+            #[cfg(feature = "experimental")]
+            EncodedVaa::DISCRIMINATOR => Self::EncodedVaa(EncodedVaa::new_unchecked(acc_info)),
+            _ => panic!("Invalid account data"),
         }
     }
 }
