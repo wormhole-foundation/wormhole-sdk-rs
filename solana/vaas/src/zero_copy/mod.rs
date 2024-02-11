@@ -1,6 +1,6 @@
-#[cfg(feature = "experimental")]
+#[cfg(feature = "encoded-vaa")]
 mod encoded_vaa;
-#[cfg(feature = "experimental")]
+#[cfg(feature = "encoded-vaa")]
 pub use encoded_vaa::*;
 
 mod posted_vaa_v1;
@@ -10,7 +10,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{account_info::AccountInfo, program_error::ProgramError};
 use wormhole_raw_vaas::Payload;
 
-#[cfg(feature = "experimental")]
+#[cfg(feature = "encoded-vaa")]
 use super::VaaVersion;
 
 pub const VAA_VERSION: u8 = 1;
@@ -19,7 +19,7 @@ pub const VAA_VERSION: u8 = 1;
 #[non_exhaustive]
 pub enum VaaAccount<'a> {
     PostedVaaV1(PostedVaaV1<'a>),
-    #[cfg(feature = "experimental")]
+    #[cfg(feature = "encoded-vaa")]
     EncodedVaa(EncodedVaa<'a>),
 }
 
@@ -34,7 +34,7 @@ impl<'a> VaaAccount<'a> {
     pub fn version(&'a self) -> u8 {
         match self {
             Self::PostedVaaV1(_) => VAA_VERSION,
-            #[cfg(feature = "experimental")]
+            #[cfg(feature = "encoded-vaa")]
             Self::EncodedVaa(inner) => inner.version(),
         }
     }
@@ -46,7 +46,7 @@ impl<'a> VaaAccount<'a> {
                 address: inner.emitter_address(),
                 sequence: inner.sequence(),
             },
-            #[cfg(feature = "experimental")]
+            #[cfg(feature = "encoded-vaa")]
             Self::EncodedVaa(inner) => match inner.as_vaa() {
                 VaaVersion::V1(vaa) => EmitterInfo {
                     chain: vaa.body().emitter_chain(),
@@ -60,7 +60,7 @@ impl<'a> VaaAccount<'a> {
     pub fn emitter_chain(&self) -> u16 {
         match self {
             Self::PostedVaaV1(inner) => inner.emitter_chain(),
-            #[cfg(feature = "experimental")]
+            #[cfg(feature = "encoded-vaa")]
             Self::EncodedVaa(inner) => match inner.as_vaa() {
                 VaaVersion::V1(vaa) => vaa.body().emitter_chain(),
             },
@@ -70,7 +70,7 @@ impl<'a> VaaAccount<'a> {
     pub fn emitter_address(&self) -> [u8; 32] {
         match self {
             Self::PostedVaaV1(inner) => inner.emitter_address(),
-            #[cfg(feature = "experimental")]
+            #[cfg(feature = "encoded-vaa")]
             Self::EncodedVaa(inner) => match inner.as_vaa() {
                 VaaVersion::V1(vaa) => vaa.body().emitter_address(),
             },
@@ -80,7 +80,7 @@ impl<'a> VaaAccount<'a> {
     pub fn sequence(&self) -> u64 {
         match self {
             Self::PostedVaaV1(inner) => inner.sequence(),
-            #[cfg(feature = "experimental")]
+            #[cfg(feature = "encoded-vaa")]
             Self::EncodedVaa(inner) => match inner.as_vaa() {
                 VaaVersion::V1(vaa) => vaa.body().sequence(),
             },
@@ -90,7 +90,7 @@ impl<'a> VaaAccount<'a> {
     pub fn consistency_level(&self) -> u8 {
         match self {
             Self::PostedVaaV1(inner) => inner.consistency_level(),
-            #[cfg(feature = "experimental")]
+            #[cfg(feature = "encoded-vaa")]
             Self::EncodedVaa(inner) => match inner.as_vaa() {
                 VaaVersion::V1(vaa) => vaa.body().consistency_level(),
             },
@@ -100,7 +100,7 @@ impl<'a> VaaAccount<'a> {
     pub fn timestamp(&self) -> u32 {
         match self {
             Self::PostedVaaV1(inner) => inner.timestamp(),
-            #[cfg(feature = "experimental")]
+            #[cfg(feature = "encoded-vaa")]
             Self::EncodedVaa(inner) => match inner.as_vaa() {
                 VaaVersion::V1(vaa) => vaa.body().timestamp(),
             },
@@ -110,7 +110,7 @@ impl<'a> VaaAccount<'a> {
     pub fn nonce(&self) -> u32 {
         match self {
             Self::PostedVaaV1(inner) => inner.nonce(),
-            #[cfg(feature = "experimental")]
+            #[cfg(feature = "encoded-vaa")]
             Self::EncodedVaa(inner) => match inner.as_vaa() {
                 VaaVersion::V1(vaa) => vaa.body().nonce(),
             },
@@ -120,7 +120,7 @@ impl<'a> VaaAccount<'a> {
     pub fn payload(&'a self) -> Payload<'a> {
         match self {
             Self::PostedVaaV1(inner) => inner.payload(),
-            #[cfg(feature = "experimental")]
+            #[cfg(feature = "encoded-vaa")]
             Self::EncodedVaa(inner) => match inner.as_vaa() {
                 VaaVersion::V1(vaa) => vaa.body().payload(),
             },
@@ -130,7 +130,7 @@ impl<'a> VaaAccount<'a> {
     pub fn digest(&self) -> solana_program::keccak::Hash {
         match self {
             Self::PostedVaaV1(inner) => inner.digest(),
-            #[cfg(feature = "experimental")]
+            #[cfg(feature = "encoded-vaa")]
             Self::EncodedVaa(inner) => inner.digest(),
         }
     }
@@ -138,14 +138,14 @@ impl<'a> VaaAccount<'a> {
     pub fn guardian_set_index(&self) -> u32 {
         match self {
             VaaAccount::PostedVaaV1(inner) => inner.guardian_set_index(),
-            #[cfg(feature = "experimental")]
+            #[cfg(feature = "encoded-vaa")]
             VaaAccount::EncodedVaa(inner) => match inner.as_vaa() {
                 VaaVersion::V1(vaa) => vaa.guardian_set_index(),
             },
         }
     }
 
-    #[cfg(feature = "experimental")]
+    #[cfg(feature = "encoded-vaa")]
     pub fn encoded_vaa(&'a self) -> Option<&'a EncodedVaa<'a>> {
         match self {
             Self::EncodedVaa(inner) => Some(inner),
@@ -156,7 +156,7 @@ impl<'a> VaaAccount<'a> {
     pub fn posted_vaa_v1(&'a self) -> Option<&'a PostedVaaV1<'a>> {
         match self {
             Self::PostedVaaV1(inner) => Some(inner),
-            #[cfg(feature = "experimental")]
+            #[cfg(feature = "encoded-vaa")]
             _ => None,
         }
     }
@@ -175,7 +175,7 @@ impl<'a> VaaAccount<'a> {
                     [118, 97, 97, 1, _, _, _, _] => {
                         Ok(Self::PostedVaaV1(PostedVaaV1::new(acc_info)?))
                     }
-                    #[cfg(feature = "experimental")]
+                    #[cfg(feature = "encoded-vaa")]
                     EncodedVaa::DISCRIMINATOR => Ok(Self::EncodedVaa(EncodedVaa::new(acc_info)?)),
                     _ => Err(ProgramError::InvalidAccountData),
                 }
@@ -188,7 +188,7 @@ impl<'a> VaaAccount<'a> {
 
         match <[u8; 8]>::try_from(&data[..8]).unwrap() {
             [118, 97, 97, 1, _, _, _, _] => Self::PostedVaaV1(PostedVaaV1::new_unchecked(acc_info)),
-            #[cfg(feature = "experimental")]
+            #[cfg(feature = "encoded-vaa")]
             EncodedVaa::DISCRIMINATOR => Self::EncodedVaa(EncodedVaa::new_unchecked(acc_info)),
             _ => panic!("Invalid account data"),
         }
