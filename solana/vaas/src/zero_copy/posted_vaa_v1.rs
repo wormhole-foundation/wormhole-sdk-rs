@@ -1,8 +1,6 @@
 use std::cell::Ref;
 
-use solana_program::{
-    account_info::AccountInfo, keccak, program_error::ProgramError, pubkey::Pubkey,
-};
+use solana_program::{account_info::AccountInfo, keccak, pubkey::Pubkey};
 use wormhole_raw_vaas::Payload;
 
 #[derive(Debug)]
@@ -94,13 +92,16 @@ impl<'a> PostedVaaV1<'a> {
     ///
     /// NOTE: There is no owner check on this account. It is the integrator's job to check that this
     /// account belongs to the Core Bridge program.
-    pub(super) fn new(acc_info: &'a AccountInfo) -> Result<Self, ProgramError> {
+    pub(super) fn new(acc_info: &'a AccountInfo) -> super::FeatureResult<Self> {
         let parsed = Self(acc_info.try_borrow_data()?);
 
         if parsed.0.len() < Self::PAYLOAD_START
             || parsed.0.len() != Self::PAYLOAD_START + parsed.payload_size()
         {
-            Err(ProgramError::InvalidAccountData)
+            #[cfg(feature = "anchor")]
+            return Err(anchor_lang::error::ErrorCode::AccountDidNotDeserialize.into());
+            #[cfg(not(feature = "anchor"))]
+            return Err(ProgramError::InvalidAccountData);
         } else {
             // Recompute message hash to re-derive PDA address.
             let (expected_address, _) = Pubkey::find_program_address(
@@ -109,7 +110,10 @@ impl<'a> PostedVaaV1<'a> {
             );
 
             if expected_address != *acc_info.key {
-                Err(ProgramError::InvalidSeeds)
+                #[cfg(feature = "anchor")]
+                return Err(anchor_lang::error::ErrorCode::ConstraintSeeds.into());
+                #[cfg(not(feature = "anchor"))]
+                return Err(solana_program::program_error::ProgramError::InvalidSeeds);
             } else {
                 Ok(parsed)
             }
