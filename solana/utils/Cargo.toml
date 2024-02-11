@@ -17,6 +17,7 @@ anchor = ["dep:anchor-lang"]
 
 [dependencies]
 solana-program.workspace = true
+cfg-if.workspace = true
 
 ### For anchor feature
 anchor-lang = { optional = true, workspace = true }
