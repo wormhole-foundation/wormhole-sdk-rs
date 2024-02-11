@@ -99,9 +99,9 @@ impl<'a> PostedVaaV1<'a> {
             || parsed.0.len() != Self::PAYLOAD_START + parsed.payload_size()
         {
             #[cfg(feature = "anchor")]
-            return Err(anchor_lang::error::ErrorCode::AccountDidNotDeserialize.into());
+            return Err(solana_program::program_error::ProgramError::InvalidAccountData.into());
             #[cfg(not(feature = "anchor"))]
-            return Err(ProgramError::InvalidAccountData);
+            return Err(solana_program::program_error::ProgramError::InvalidAccountData);
         } else {
             // Recompute message hash to re-derive PDA address.
             let (expected_address, _) = Pubkey::find_program_address(
