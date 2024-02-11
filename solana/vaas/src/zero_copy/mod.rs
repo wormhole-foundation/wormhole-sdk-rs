@@ -161,7 +161,7 @@ impl<'a> VaaAccount<'a> {
         }
     }
 
-    pub fn try_load(acc_info: &'a AccountInfo) -> Result<Self, ProgramError> {
+    pub fn load(acc_info: &'a AccountInfo) -> Result<Self, ProgramError> {
         // First check owner. TODO: Change this to InvalidAccountOwner when we bump to solana 1.17
         if *acc_info.owner != wormhole_solana_consts::CORE_BRIDGE_PROGRAM_ID {
             Err(ProgramError::InvalidAccountData)
@@ -183,7 +183,7 @@ impl<'a> VaaAccount<'a> {
         }
     }
 
-    pub fn load(acc_info: &'a AccountInfo) -> Self {
+    pub fn load_unchecked(acc_info: &'a AccountInfo) -> Self {
         let data = acc_info.data.borrow();
 
         match <[u8; 8]>::try_from(&data[..8]).unwrap() {
