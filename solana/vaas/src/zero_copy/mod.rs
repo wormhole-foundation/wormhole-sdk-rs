@@ -1,3 +1,5 @@
+#![allow(clippy::result_large_err)]
+
 #[cfg(feature = "encoded-vaa")]
 mod encoded_vaa;
 #[cfg(feature = "encoded-vaa")]
@@ -7,8 +9,13 @@ mod posted_vaa_v1;
 pub use posted_vaa_v1::*;
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::{account_info::AccountInfo, program_error::ProgramError};
+use solana_program::account_info::AccountInfo;
 use wormhole_raw_vaas::Payload;
+
+#[cfg(feature = "anchor")]
+type FeatureResult<T> = anchor_lang::Result<T>;
+#[cfg(not(feature = "anchor"))]
+type FeatureResult<T> = Result<T, solana_program::program_error::ProgramError>;
 
 #[cfg(feature = "encoded-vaa")]
 use super::VaaVersion;
@@ -161,15 +168,20 @@ impl<'a> VaaAccount<'a> {
         }
     }
 
-    pub fn load(acc_info: &'a AccountInfo) -> Result<Self, ProgramError> {
+    pub fn load(acc_info: &'a AccountInfo) -> FeatureResult<VaaAccount<'a>> {
         // First check owner. TODO: Change this to InvalidAccountOwner when we bump to solana 1.17
         if *acc_info.owner != wormhole_solana_consts::CORE_BRIDGE_PROGRAM_ID {
-            Err(ProgramError::InvalidAccountData)
+            #[cfg(feature = "anchor")]
+            return Err(anchor_lang::error::ErrorCode::ConstraintOwner.into());
+            #[cfg(not(feature = "anchor"))]
+            return Err(solana_program::program_error::ProgramError::IllegalOwner);
         } else {
             let data = acc_info.try_borrow_data()?;
-
             if data.len() <= 8 {
-                Err(ProgramError::InvalidAccountData)
+                #[cfg(feature = "anchor")]
+                return Err(anchor_lang::error::ErrorCode::AccountDidNotDeserialize.into());
+                #[cfg(not(feature = "anchor"))]
+                return Err(solana_program::program_error::ProgramError::InvalidAccountData);
             } else {
                 match <[u8; 8]>::try_from(&data[..8]).unwrap() {
                     [118, 97, 97, 1, _, _, _, _] => {
@@ -177,7 +189,14 @@ impl<'a> VaaAccount<'a> {
                     }
                     #[cfg(feature = "encoded-vaa")]
                     EncodedVaa::DISCRIMINATOR => Ok(Self::EncodedVaa(EncodedVaa::new(acc_info)?)),
-                    _ => Err(ProgramError::InvalidAccountData),
+                    _ => {
+                        #[cfg(feature = "anchor")]
+                        return Err(anchor_lang::error::ErrorCode::AccountDidNotDeserialize.into());
+                        #[cfg(not(feature = "anchor"))]
+                        return Err(
+                            solana_program::program_error::ProgramError::InvalidAccountData,
+                        );
+                    }
                 }
             }
         }

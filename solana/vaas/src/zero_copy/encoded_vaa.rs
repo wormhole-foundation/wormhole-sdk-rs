@@ -1,8 +1,6 @@
 use std::cell::Ref;
 
-use solana_program::{
-    account_info::AccountInfo, keccak, program_error::ProgramError, pubkey::Pubkey,
-};
+use solana_program::{account_info::AccountInfo, keccak, pubkey::Pubkey};
 use wormhole_raw_vaas::Vaa;
 
 use crate::VaaVersion;
@@ -65,12 +63,15 @@ impl<'a> EncodedVaa<'a> {
         keccak::hash(self.message_hash().as_ref())
     }
 
-    pub(super) fn new(acc_info: &'a AccountInfo) -> Result<Self, ProgramError> {
+    pub(super) fn new(acc_info: &'a AccountInfo) -> super::FeatureResult<Self> {
         let parsed = Self(acc_info.try_borrow_data()?);
 
         // We only allow verified VAAs to be read.
         if parsed.version() != 1 || parsed.status() != Self::PROCESSING_STATUS_VERIFIED {
-            Err(ProgramError::InvalidAccountData)
+            #[cfg(feature = "anchor")]
+            return Err(anchor_lang::error::ErrorCode::AccountDidNotDeserialize.into());
+            #[cfg(not(feature = "anchor"))]
+            return Err(solana_program::program_error::ProgramError::InvalidAccountData);
         } else {
             Ok(parsed)
         }
