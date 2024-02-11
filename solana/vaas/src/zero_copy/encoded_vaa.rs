@@ -69,7 +69,7 @@ impl<'a> EncodedVaa<'a> {
         // We only allow verified VAAs to be read.
         if parsed.version() != 1 || parsed.status() != Self::PROCESSING_STATUS_VERIFIED {
             #[cfg(feature = "anchor")]
-            return Err(anchor_lang::error::ErrorCode::AccountDidNotDeserialize.into());
+            return Err(solana_program::program_error::ProgramError::InvalidAccountData.into());
             #[cfg(not(feature = "anchor"))]
             return Err(solana_program::program_error::ProgramError::InvalidAccountData);
         } else {
