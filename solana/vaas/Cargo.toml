@@ -16,7 +16,7 @@ rust-version.workspace = true
 mainnet = ["wormhole-solana-consts/mainnet"]
 testnet = ["wormhole-solana-consts/testnet"]
 localnet = ["wormhole-solana-consts/localnet"]
-experimental = []
+encoded-vaa = []
 
 [dependencies]
 wormhole-raw-vaas.workspace = true
