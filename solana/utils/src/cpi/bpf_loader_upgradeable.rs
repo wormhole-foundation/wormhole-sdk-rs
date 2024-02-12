@@ -2,21 +2,65 @@ use anchor_lang::prelude::*;
 
 pub use solana_program::bpf_loader_upgradeable::{self, id, ID};
 
+#[derive(Debug, Clone)]
+pub struct BpfLoaderUpgradeable;
+
+impl anchor_lang::Id for BpfLoaderUpgradeable {
+    fn id() -> Pubkey {
+        ID
+    }
+}
+
 pub fn set_upgrade_authority<'info>(
     ctx: CpiContext<'_, '_, '_, 'info, SetUpgradeAuthority<'info>>,
     program_id: &Pubkey,
-    new_authority: Option<&Pubkey>,
 ) -> Result<()> {
     solana_program::program::invoke_signed(
         &bpf_loader_upgradeable::set_upgrade_authority(
             program_id,
-            &ctx.accounts.current_authority.key(),
-            new_authority,
+            ctx.accounts.current_authority.key,
+            ctx.accounts.new_authority.as_ref().map(|a| a.key),
         ),
         &ctx.to_account_infos(),
         ctx.signer_seeds,
     )
     .map_err(Into::into)
+}
+
+pub struct SetUpgradeAuthority<'info> {
+    pub program_data: AccountInfo<'info>,
+    pub current_authority: AccountInfo<'info>,
+    pub new_authority: Option<AccountInfo<'info>>,
+}
+
+impl ToAccountMetas for SetUpgradeAuthority<'_> {
+    fn to_account_metas(&self, _is_signer: Option<bool>) -> Vec<AccountMeta> {
+        vec![]
+        // match &self.new_authority {
+        //     Some(new_authority) => vec![
+        //         AccountMeta::new(*self.program_data.key, false),
+        //         AccountMeta::new(*self.current_authority.key, true),
+        //         AccountMeta::new(*new_authority.key, true),
+        //     ],
+        //     None => vec![
+        //         AccountMeta::new(*self.program_data.key, false),
+        //         AccountMeta::new(*self.current_authority.key, true),
+        //     ],
+        // }
+    }
+}
+
+impl<'info> ToAccountInfos<'info> for SetUpgradeAuthority<'info> {
+    fn to_account_infos(&self) -> Vec<AccountInfo<'info>> {
+        match &self.new_authority {
+            Some(new_authority) => vec![
+                self.program_data.clone(),
+                self.current_authority.clone(),
+                new_authority.clone(),
+            ],
+            None => vec![self.program_data.clone(), self.current_authority.clone()],
+        }
+    }
 }
 
 pub fn set_upgrade_authority_checked<'info>(
@@ -26,22 +70,75 @@ pub fn set_upgrade_authority_checked<'info>(
     solana_program::program::invoke_signed(
         &bpf_loader_upgradeable::set_upgrade_authority_checked(
             program_id,
-            &ctx.accounts.current_authority.key(),
-            &ctx.accounts.new_authority.key(),
+            ctx.accounts.current_authority.key,
+            ctx.accounts.new_authority.key,
         ),
         &ctx.to_account_infos(),
         ctx.signer_seeds,
     )
     .map_err(Into::into)
+}
+
+#[derive(Accounts)]
+pub struct SetUpgradeAuthorityChecked<'info> {
+    pub program_data: AccountInfo<'info>,
+    pub current_authority: AccountInfo<'info>,
+    pub new_authority: AccountInfo<'info>,
+}
+
+pub fn set_buffer_authority<'info>(
+    ctx: CpiContext<'_, '_, '_, 'info, SetBufferAuthority<'info>>,
+    program_id: &Pubkey,
+) -> Result<()> {
+    solana_program::program::invoke_signed(
+        &bpf_loader_upgradeable::set_buffer_authority(
+            program_id,
+            ctx.accounts.current_authority.key,
+            ctx.accounts.new_authority.key,
+        ),
+        &ctx.to_account_infos(),
+        ctx.signer_seeds,
+    )
+    .map_err(Into::into)
+}
+
+#[derive(Accounts)]
+pub struct SetBufferAuthority<'info> {
+    pub program_data: AccountInfo<'info>,
+    pub current_authority: AccountInfo<'info>,
+    pub new_authority: AccountInfo<'info>,
+}
+
+pub fn set_buffer_authority_checked<'info>(
+    ctx: CpiContext<'_, '_, '_, 'info, SetBufferAuthorityChecked<'info>>,
+    program_id: &Pubkey,
+) -> Result<()> {
+    solana_program::program::invoke_signed(
+        &bpf_loader_upgradeable::set_buffer_authority(
+            program_id,
+            ctx.accounts.current_authority.key,
+            ctx.accounts.new_authority.key,
+        ),
+        &ctx.to_account_infos(),
+        ctx.signer_seeds,
+    )
+    .map_err(Into::into)
+}
+
+#[derive(Accounts)]
+pub struct SetBufferAuthorityChecked<'info> {
+    pub program_data: AccountInfo<'info>,
+    pub current_authority: AccountInfo<'info>,
+    pub new_authority: AccountInfo<'info>,
 }
 
 pub fn upgrade<'info>(ctx: CpiContext<'_, '_, '_, 'info, Upgrade<'info>>) -> Result<()> {
     solana_program::program::invoke_signed(
         &bpf_loader_upgradeable::upgrade(
-            &ctx.accounts.program.key(),
-            &ctx.accounts.buffer.key(),
-            &ctx.accounts.authority.key(),
-            &ctx.accounts.spill.key(),
+            ctx.accounts.program.key,
+            ctx.accounts.buffer.key,
+            ctx.accounts.authority.key,
+            ctx.accounts.spill.key,
         ),
         &ctx.to_account_infos(),
         ctx.signer_seeds,
@@ -50,53 +147,12 @@ pub fn upgrade<'info>(ctx: CpiContext<'_, '_, '_, 'info, Upgrade<'info>>) -> Res
 }
 
 #[derive(Accounts)]
-pub struct SetUpgradeAuthority<'info> {
-    #[account(mut)]
-    pub program_data: AccountInfo<'info>,
-
-    #[account(signer)]
-    pub current_authority: AccountInfo<'info>,
-}
-
-#[derive(Accounts)]
-pub struct SetUpgradeAuthorityChecked<'info> {
-    #[account(mut)]
-    pub program_data: AccountInfo<'info>,
-
-    #[account(signer)]
-    pub current_authority: AccountInfo<'info>,
-
-    #[account(signer)]
-    pub new_authority: AccountInfo<'info>,
-}
-
-#[derive(Accounts)]
 pub struct Upgrade<'info> {
-    #[account(mut)]
     pub program: AccountInfo<'info>,
-
-    #[account(mut)]
     pub program_data: AccountInfo<'info>,
-
-    #[account(mut)]
     pub buffer: AccountInfo<'info>,
-
-    #[account(signer)]
     pub authority: AccountInfo<'info>,
-
-    #[account(mut)]
     pub spill: AccountInfo<'info>,
-
     pub rent: AccountInfo<'info>,
-
     pub clock: AccountInfo<'info>,
-}
-
-#[derive(Debug, Clone)]
-pub struct BpfLoaderUpgradeable;
-
-impl anchor_lang::Id for BpfLoaderUpgradeable {
-    fn id() -> Pubkey {
-        ID
-    }
 }
