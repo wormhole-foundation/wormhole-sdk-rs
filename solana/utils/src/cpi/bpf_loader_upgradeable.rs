@@ -97,11 +97,10 @@ mod __private {
 
     pub fn set_buffer_authority<'info>(
         ctx: CpiContext<'_, '_, '_, 'info, SetBufferAuthority<'info>>,
-        program_id: &Pubkey,
     ) -> Result<()> {
         solana_program::program::invoke_signed(
             &bpf_loader_upgradeable::set_buffer_authority(
-                program_id,
+                ctx.accounts.buffer.key,
                 ctx.accounts.current_authority.key,
                 ctx.accounts.new_authority.key,
             ),
@@ -113,18 +112,17 @@ mod __private {
 
     #[derive(Accounts)]
     pub struct SetBufferAuthority<'info> {
-        pub program_data: AccountInfo<'info>,
+        pub buffer: AccountInfo<'info>,
         pub current_authority: AccountInfo<'info>,
         pub new_authority: AccountInfo<'info>,
     }
 
     pub fn set_buffer_authority_checked<'info>(
         ctx: CpiContext<'_, '_, '_, 'info, SetBufferAuthorityChecked<'info>>,
-        program_id: &Pubkey,
     ) -> Result<()> {
         solana_program::program::invoke_signed(
-            &bpf_loader_upgradeable::set_buffer_authority(
-                program_id,
+            &bpf_loader_upgradeable::set_buffer_authority_checked(
+                ctx.accounts.buffer.key,
                 ctx.accounts.current_authority.key,
                 ctx.accounts.new_authority.key,
             ),
@@ -136,7 +134,7 @@ mod __private {
 
     #[derive(Accounts)]
     pub struct SetBufferAuthorityChecked<'info> {
-        pub program_data: AccountInfo<'info>,
+        pub buffer: AccountInfo<'info>,
         pub current_authority: AccountInfo<'info>,
         pub new_authority: AccountInfo<'info>,
     }
