@@ -19,21 +19,20 @@ pub use __private::{
 
 mod __private {
     use super::*;
+    use crate::cpi::invoke_with_context;
 
     pub fn set_upgrade_authority<'info>(
         ctx: CpiContext<'_, '_, '_, 'info, SetUpgradeAuthority<'info>>,
         program_id: &Pubkey,
     ) -> Result<()> {
-        solana_program::program::invoke_signed(
+        invoke_with_context(
             &bpf_loader_upgradeable::set_upgrade_authority(
                 program_id,
                 ctx.accounts.current_authority.key,
                 ctx.accounts.new_authority.as_ref().map(|a| a.key),
             ),
-            &ctx.to_account_infos(),
-            ctx.signer_seeds,
+            ctx,
         )
-        .map_err(Into::into)
     }
 
     pub struct SetUpgradeAuthority<'info> {
@@ -76,16 +75,14 @@ mod __private {
         ctx: CpiContext<'_, '_, '_, 'info, SetUpgradeAuthorityChecked<'info>>,
         program_id: &Pubkey,
     ) -> Result<()> {
-        solana_program::program::invoke_signed(
+        invoke_with_context(
             &bpf_loader_upgradeable::set_upgrade_authority_checked(
                 program_id,
                 ctx.accounts.current_authority.key,
                 ctx.accounts.new_authority.key,
             ),
-            &ctx.to_account_infos(),
-            ctx.signer_seeds,
+            ctx,
         )
-        .map_err(Into::into)
     }
 
     #[derive(Accounts)]
@@ -98,16 +95,14 @@ mod __private {
     pub fn set_buffer_authority<'info>(
         ctx: CpiContext<'_, '_, '_, 'info, SetBufferAuthority<'info>>,
     ) -> Result<()> {
-        solana_program::program::invoke_signed(
+        invoke_with_context(
             &bpf_loader_upgradeable::set_buffer_authority(
                 ctx.accounts.buffer.key,
                 ctx.accounts.current_authority.key,
                 ctx.accounts.new_authority.key,
             ),
-            &ctx.to_account_infos(),
-            ctx.signer_seeds,
+            ctx,
         )
-        .map_err(Into::into)
     }
 
     #[derive(Accounts)]
@@ -120,16 +115,14 @@ mod __private {
     pub fn set_buffer_authority_checked<'info>(
         ctx: CpiContext<'_, '_, '_, 'info, SetBufferAuthorityChecked<'info>>,
     ) -> Result<()> {
-        solana_program::program::invoke_signed(
+        invoke_with_context(
             &bpf_loader_upgradeable::set_buffer_authority_checked(
                 ctx.accounts.buffer.key,
                 ctx.accounts.current_authority.key,
                 ctx.accounts.new_authority.key,
             ),
-            &ctx.to_account_infos(),
-            ctx.signer_seeds,
+            ctx,
         )
-        .map_err(Into::into)
     }
 
     #[derive(Accounts)]
@@ -140,17 +133,15 @@ mod __private {
     }
 
     pub fn upgrade<'info>(ctx: CpiContext<'_, '_, '_, 'info, Upgrade<'info>>) -> Result<()> {
-        solana_program::program::invoke_signed(
+        invoke_with_context(
             &bpf_loader_upgradeable::upgrade(
                 ctx.accounts.program.key,
                 ctx.accounts.buffer.key,
                 ctx.accounts.authority.key,
                 ctx.accounts.spill.key,
             ),
-            &ctx.to_account_infos(),
-            ctx.signer_seeds,
+            ctx,
         )
-        .map_err(Into::into)
     }
 
     #[derive(Accounts)]
