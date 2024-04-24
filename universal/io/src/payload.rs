@@ -91,7 +91,7 @@ mod test {
     pub struct Message {
         pub a: u32,
         pub b: NineteenBytes,
-        pub c: WriteableBytes,
+        pub c: WriteableBytes<u32>,
         pub d: [u64; 4],
         pub e: bool,
     }
@@ -141,7 +141,7 @@ mod test {
         let msg = Message {
             a: 420,
             b: NineteenBytes(hex!("ba5edba5edba5edba5edba5edba5edba5edba5")),
-            c: b"Somebody set us up the bomb.".to_vec().into(),
+            c: b"Somebody set us up the bomb.".to_vec().try_into().unwrap(),
             d: [0x45; 4],
             e: true,
         };
@@ -173,7 +173,7 @@ mod test {
         let expected = Message {
             a: 420,
             b: NineteenBytes(hex!("ba5edba5edba5edba5edba5edba5edba5edba5")),
-            c: b"Somebody set us up the bomb.".to_vec().into(),
+            c: b"Somebody set us up the bomb.".to_vec().try_into().unwrap(),
             d: [0x45; 4],
             e: true,
         };

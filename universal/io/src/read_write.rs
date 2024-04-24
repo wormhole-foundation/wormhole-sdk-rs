@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, marker::PhantomData};
 
 pub trait Readable {
     const SIZE: Option<usize>;
@@ -196,36 +196,132 @@ impl_for_int_array!(i128);
 
 /// Wrapper for `Vec<u8>`. Encoding is similar to Borsh, where the length is encoded as u32 (but in
 /// this case, it's big endian).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct WriteableBytes(Vec<u8>);
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct WriteableBytes<L>
+where
+    L: Sized + Readable + Writeable,
+    u32: From<L>,
+    L: TryFrom<usize>,
+{
+    phantom: PhantomData<L>,
+    inner: Vec<u8>,
+}
 
-impl From<Vec<u8>> for WriteableBytes {
-    fn from(vec: Vec<u8>) -> Self {
-        Self(vec)
+impl<L> WriteableBytes<L>
+where
+    L: Sized + Readable + Writeable,
+    u32: From<L>,
+    L: TryFrom<usize>,
+{
+    pub fn new(inner: Vec<u8>) -> Self {
+        Self {
+            phantom: PhantomData,
+            inner,
+        }
+    }
+
+    pub fn try_encoded_len(&self) -> io::Result<L> {
+        match L::try_from(self.inner.len()) {
+            Ok(len) => Ok(len),
+            Err(_) => Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "L overflow when converting from usize",
+            )),
+        }
     }
 }
 
-impl From<WriteableBytes> for Vec<u8> {
-    fn from(bytes: WriteableBytes) -> Self {
-        bytes.0
+impl<L> TryFrom<Vec<u8>> for WriteableBytes<L>
+where
+    L: Sized + Readable + Writeable,
+    u32: From<L>,
+    L: TryFrom<usize>,
+{
+    type Error = <L as TryFrom<usize>>::Error;
+
+    fn try_from(vec: Vec<u8>) -> Result<Self, Self::Error> {
+        match L::try_from(vec.len()) {
+            Ok(_) => Ok(Self {
+                phantom: PhantomData,
+                inner: vec,
+            }),
+            Err(e) => Err(e),
+        }
     }
 }
 
-impl std::ops::Deref for WriteableBytes {
+impl<L> From<WriteableBytes<L>> for Vec<u8>
+where
+    L: Sized + Readable + Writeable,
+    u32: From<L>,
+    L: TryFrom<usize>,
+{
+    fn from(bytes: WriteableBytes<L>) -> Self {
+        bytes.inner
+    }
+}
+
+impl<L> std::ops::Deref for WriteableBytes<L>
+where
+    L: Sized + Readable + Writeable,
+    u32: From<L>,
+    L: TryFrom<usize>,
+{
     type Target = Vec<u8>;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.inner
     }
 }
 
-impl std::ops::DerefMut for WriteableBytes {
+impl<L> std::ops::DerefMut for WriteableBytes<L>
+where
+    L: Sized + Readable + Writeable,
+    u32: From<L>,
+    L: TryFrom<usize>,
+{
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+        &mut self.inner
     }
 }
 
-impl Readable for WriteableBytes {
+impl Readable for WriteableBytes<u8> {
+    const SIZE: Option<usize> = None;
+
+    fn read<R>(reader: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+        R: io::Read,
+    {
+        let len = u8::read(reader)?;
+        let mut inner: Vec<u8> = vec![0u8; len.into()];
+        reader.read_exact(&mut inner)?;
+        Ok(Self {
+            phantom: PhantomData,
+            inner,
+        })
+    }
+}
+
+impl Readable for WriteableBytes<u16> {
+    const SIZE: Option<usize> = None;
+
+    fn read<R>(reader: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+        R: io::Read,
+    {
+        let len = u16::read(reader)?;
+        let mut inner = vec![0u8; len.into()];
+        reader.read_exact(&mut inner)?;
+        Ok(Self {
+            phantom: PhantomData,
+            inner,
+        })
+    }
+}
+
+impl Readable for WriteableBytes<u32> {
     const SIZE: Option<usize> = None;
 
     fn read<R>(reader: &mut R) -> io::Result<Self>
@@ -234,23 +330,44 @@ impl Readable for WriteableBytes {
         R: io::Read,
     {
         let len = u32::read(reader)?;
-        let mut buf = vec![0u8; len.try_into().expect("usize overflow")];
-        reader.read_exact(&mut buf)?;
-        Ok(Self(buf))
+        match len.try_into() {
+            Ok(len) => {
+                let mut inner = vec![0u8; len];
+                reader.read_exact(&mut inner)?;
+                Ok(Self {
+                    phantom: PhantomData,
+                    inner,
+                })
+            }
+            Err(_) => Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "u32 overflow when converting to usize",
+            )),
+        }
     }
 }
 
-impl Writeable for WriteableBytes {
+impl<L> Writeable for WriteableBytes<L>
+where
+    L: Sized + Readable + Writeable,
+    u32: From<L>,
+    L: TryFrom<usize>,
+{
     fn written_size(&self) -> usize {
-        4 + self.0.len()
+        std::mem::size_of::<L>() + self.inner.len()
     }
 
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
     {
-        (u32::try_from(self.0.len()).expect("u32 overflow")).write(writer)?;
-        writer.write_all(&self.0)
+        match self.try_encoded_len() {
+            Ok(len) => {
+                len.write(writer)?;
+                writer.write_all(&self.inner)
+            }
+            Err(e) => Err(e),
+        }
     }
 }
 
@@ -409,9 +526,37 @@ pub mod test {
     }
 
     #[test]
-    fn variable_bytes_read_write() {
+    fn variable_bytes_read_write_u8() {
         let data = b"All your base are belong to us.";
-        let bytes = WriteableBytes(data.to_vec());
+        let bytes = WriteableBytes::<u8>::new(data.to_vec());
+
+        let mut encoded = Vec::<u8>::with_capacity(bytes.written_size());
+        let mut writer = std::io::Cursor::new(&mut encoded);
+        bytes.write(&mut writer).unwrap();
+
+        let expected = hex!("1f416c6c20796f75722062617365206172652062656c6f6e6720746f2075732e");
+        assert_eq!(encoded, expected);
+        assert_eq!(bytes.to_vec(), expected.to_vec());
+    }
+
+    #[test]
+    fn variable_bytes_read_write_u16() {
+        let data = b"All your base are belong to us.";
+        let bytes = WriteableBytes::<u16>::new(data.to_vec());
+
+        let mut encoded = Vec::<u8>::with_capacity(bytes.written_size());
+        let mut writer = std::io::Cursor::new(&mut encoded);
+        bytes.write(&mut writer).unwrap();
+
+        let expected = hex!("001f416c6c20796f75722062617365206172652062656c6f6e6720746f2075732e");
+        assert_eq!(encoded, expected);
+        assert_eq!(bytes.to_vec(), expected.to_vec());
+    }
+
+    #[test]
+    fn variable_bytes_read_write_u32() {
+        let data = b"All your base are belong to us.";
+        let bytes = WriteableBytes::<u32>::new(data.to_vec());
 
         let mut encoded = Vec::<u8>::with_capacity(bytes.written_size());
         let mut writer = std::io::Cursor::new(&mut encoded);
@@ -421,5 +566,14 @@ pub mod test {
             hex!("0000001f416c6c20796f75722062617365206172652062656c6f6e6720746f2075732e");
         assert_eq!(encoded, expected);
         assert_eq!(bytes.to_vec(), expected.to_vec());
+    }
+
+    #[test]
+    fn mem_take() {
+        let data = b"All your base are belong to us.";
+        let mut bytes = WriteableBytes::<u16>::new(data.to_vec());
+
+        let taken = std::mem::take(&mut bytes);
+        assert_eq!(taken.as_slice(), data);
     }
 }
