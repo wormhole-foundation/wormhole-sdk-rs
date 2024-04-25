@@ -1,8 +1,6 @@
 use std::{io, marker::PhantomData};
 
 pub trait Readable {
-    const SIZE: Option<usize>;
-
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -13,19 +11,9 @@ pub trait Writeable {
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         W: io::Write;
-
-    fn written_size(&self) -> usize;
-
-    fn to_vec(&self) -> Vec<u8> {
-        let mut buf = Vec::with_capacity(self.written_size());
-        self.write(&mut buf).expect("no alloc failure");
-        buf
-    }
 }
 
 impl Readable for u8 {
-    const SIZE: Option<usize> = Some(1);
-
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         R: io::Read,
@@ -37,10 +25,6 @@ impl Readable for u8 {
 }
 
 impl Writeable for u8 {
-    fn written_size(&self) -> usize {
-        <Self as Readable>::SIZE.unwrap()
-    }
-
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -50,8 +34,6 @@ impl Writeable for u8 {
 }
 
 impl Readable for bool {
-    const SIZE: Option<usize> = <u8 as Readable>::SIZE;
-
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         R: io::Read,
@@ -68,10 +50,6 @@ impl Readable for bool {
 }
 
 impl Writeable for bool {
-    fn written_size(&self) -> usize {
-        <Self as Readable>::SIZE.unwrap()
-    }
-
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -83,8 +61,6 @@ impl Writeable for bool {
 macro_rules! impl_for_int {
     ($type:ty) => {
         impl Readable for $type {
-            const SIZE: Option<usize> = Some(std::mem::size_of::<$type>());
-
             fn read<R>(reader: &mut R) -> io::Result<Self>
             where
                 R: io::Read,
@@ -96,10 +72,6 @@ macro_rules! impl_for_int {
         }
 
         impl Writeable for $type {
-            fn written_size(&self) -> usize {
-                <Self as Readable>::SIZE.unwrap()
-            }
-
             fn write<W>(&self, writer: &mut W) -> io::Result<()>
             where
                 W: io::Write,
@@ -122,8 +94,6 @@ impl_for_int!(i64);
 impl_for_int!(i128);
 
 impl<const N: usize> Readable for [u8; N] {
-    const SIZE: Option<usize> = Some(N);
-
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -136,10 +106,6 @@ impl<const N: usize> Readable for [u8; N] {
 }
 
 impl<const N: usize> Writeable for [u8; N] {
-    fn written_size(&self) -> usize {
-        <Self as Readable>::SIZE.unwrap()
-    }
-
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -151,8 +117,6 @@ impl<const N: usize> Writeable for [u8; N] {
 macro_rules! impl_for_int_array {
     ($type:ty) => {
         impl<const N: usize> Readable for [$type; N] {
-            const SIZE: Option<usize> = Some(N * std::mem::size_of::<$type>());
-
             fn read<R>(reader: &mut R) -> io::Result<Self>
             where
                 R: io::Read,
@@ -166,10 +130,6 @@ macro_rules! impl_for_int_array {
         }
 
         impl<const N: usize> Writeable for [$type; N] {
-            fn written_size(&self) -> usize {
-                <Self as Readable>::SIZE.unwrap()
-            }
-
             fn write<W>(&self, writer: &mut W) -> io::Result<()>
             where
                 W: io::Write,
@@ -199,9 +159,8 @@ impl_for_int_array!(i128);
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct WriteableBytes<L>
 where
-    L: Sized + Readable + Writeable,
     u32: From<L>,
-    L: TryFrom<usize>,
+    L: Sized + Readable + Writeable + TryFrom<usize>,
 {
     phantom: PhantomData<L>,
     inner: Vec<u8>,
@@ -209,9 +168,8 @@ where
 
 impl<L> WriteableBytes<L>
 where
-    L: Sized + Readable + Writeable,
     u32: From<L>,
-    L: TryFrom<usize>,
+    L: Sized + Readable + Writeable + TryFrom<usize>,
 {
     pub fn new(inner: Vec<u8>) -> Self {
         Self {
@@ -233,9 +191,8 @@ where
 
 impl<L> TryFrom<Vec<u8>> for WriteableBytes<L>
 where
-    L: Sized + Readable + Writeable,
     u32: From<L>,
-    L: TryFrom<usize>,
+    L: Sized + Readable + Writeable + TryFrom<usize>,
 {
     type Error = <L as TryFrom<usize>>::Error;
 
@@ -252,9 +209,8 @@ where
 
 impl<L> From<WriteableBytes<L>> for Vec<u8>
 where
-    L: Sized + Readable + Writeable,
     u32: From<L>,
-    L: TryFrom<usize>,
+    L: Sized + Readable + Writeable + TryFrom<usize>,
 {
     fn from(bytes: WriteableBytes<L>) -> Self {
         bytes.inner
@@ -276,9 +232,8 @@ where
 
 impl<L> std::ops::DerefMut for WriteableBytes<L>
 where
-    L: Sized + Readable + Writeable,
     u32: From<L>,
-    L: TryFrom<usize>,
+    L: Sized + Readable + Writeable + TryFrom<usize>,
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
@@ -286,8 +241,6 @@ where
 }
 
 impl Readable for WriteableBytes<u8> {
-    const SIZE: Option<usize> = None;
-
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -304,8 +257,6 @@ impl Readable for WriteableBytes<u8> {
 }
 
 impl Readable for WriteableBytes<u16> {
-    const SIZE: Option<usize> = None;
-
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -322,8 +273,6 @@ impl Readable for WriteableBytes<u16> {
 }
 
 impl Readable for WriteableBytes<u32> {
-    const SIZE: Option<usize> = None;
-
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -349,14 +298,9 @@ impl Readable for WriteableBytes<u32> {
 
 impl<L> Writeable for WriteableBytes<L>
 where
-    L: Sized + Readable + Writeable,
     u32: From<L>,
-    L: TryFrom<usize>,
+    L: Sized + Readable + Writeable + TryFrom<usize>,
 {
-    fn written_size(&self) -> usize {
-        std::mem::size_of::<L>() + self.inner.len()
-    }
-
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -373,8 +317,6 @@ where
 
 #[cfg(feature = "alloy")]
 impl<const N: usize> Readable for alloy_primitives::FixedBytes<N> {
-    const SIZE: Option<usize> = Some(N);
-
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -386,10 +328,6 @@ impl<const N: usize> Readable for alloy_primitives::FixedBytes<N> {
 
 #[cfg(feature = "alloy")]
 impl<const N: usize> Writeable for alloy_primitives::FixedBytes<N> {
-    fn written_size(&self) -> usize {
-        <Self as Readable>::SIZE.unwrap()
-    }
-
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -400,8 +338,6 @@ impl<const N: usize> Writeable for alloy_primitives::FixedBytes<N> {
 
 #[cfg(feature = "alloy")]
 impl<const BITS: usize, const LIMBS: usize> Readable for alloy_primitives::Uint<BITS, LIMBS> {
-    const SIZE: Option<usize> = { Some(BITS * 8) };
-
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -416,10 +352,6 @@ impl<const BITS: usize, const LIMBS: usize> Readable for alloy_primitives::Uint<
 
 #[cfg(feature = "alloy")]
 impl<const BITS: usize, const LIMBS: usize> Writeable for alloy_primitives::Uint<BITS, LIMBS> {
-    fn written_size(&self) -> usize {
-        <Self as Readable>::SIZE.unwrap()
-    }
-
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -430,8 +362,6 @@ impl<const BITS: usize, const LIMBS: usize> Writeable for alloy_primitives::Uint
 
 #[cfg(feature = "alloy")]
 impl Readable for alloy_primitives::Address {
-    const SIZE: Option<usize> = Some(20);
-
     fn read<R>(reader: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -443,10 +373,6 @@ impl Readable for alloy_primitives::Address {
 
 #[cfg(feature = "alloy")]
 impl Writeable for alloy_primitives::Address {
-    fn written_size(&self) -> usize {
-        <Self as Readable>::SIZE.unwrap()
-    }
-
     fn write<W>(&self, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -463,66 +389,53 @@ pub mod test {
     #[test]
     fn u8_read_write() {
         const EXPECTED_SIZE: usize = 1;
-        assert_eq!(u8::SIZE, Some(EXPECTED_SIZE));
 
         let value = 69u8;
-        assert_eq!(value.written_size(), EXPECTED_SIZE);
 
-        let mut encoded = Vec::<u8>::with_capacity(value.written_size());
+        let mut encoded = Vec::<u8>::with_capacity(EXPECTED_SIZE);
         let mut writer = std::io::Cursor::new(&mut encoded);
         value.write(&mut writer).unwrap();
 
         let expected = hex!("45");
         assert_eq!(encoded, expected);
-        assert_eq!(value.to_vec(), expected.to_vec());
     }
 
     #[test]
     fn u64_read_write() {
         const EXPECTED_SIZE: usize = 8;
-        assert_eq!(u64::SIZE, Some(EXPECTED_SIZE));
 
         let value = 69u64;
-        assert_eq!(value.written_size(), EXPECTED_SIZE);
-
-        let mut encoded = Vec::<u8>::with_capacity(value.written_size());
+        let mut encoded = Vec::<u8>::with_capacity(EXPECTED_SIZE);
         let mut writer = std::io::Cursor::new(&mut encoded);
         value.write(&mut writer).unwrap();
 
         let expected = hex!("0000000000000045");
         assert_eq!(encoded, expected);
-        assert_eq!(value.to_vec(), expected.to_vec());
     }
 
     #[test]
     fn u8_array_read_write() {
         let data = [1, 2, 8, 16, 32, 64, 69u8];
-        assert_eq!(<[u8; 7]>::SIZE, Some(data.len()));
-        assert_eq!(data.written_size(), data.len());
 
-        let mut encoded = Vec::<u8>::with_capacity(data.written_size());
+        let mut encoded = Vec::<u8>::with_capacity(data.len());
         let mut writer = std::io::Cursor::new(&mut encoded);
         data.write(&mut writer).unwrap();
 
         let expected = hex!("01020810204045");
         assert_eq!(encoded, expected);
-        assert_eq!(data.to_vec(), expected.to_vec());
     }
 
     #[test]
     fn u64_array_read_write() {
         let data = [1, 2, 8, 16, 32, 64, 69u64];
         const EXPECTED_SIZE: usize = 56;
-        assert_eq!(<[u64; 7]>::SIZE, Some(EXPECTED_SIZE));
-        assert_eq!(data.written_size(), EXPECTED_SIZE);
 
-        let mut encoded = Vec::<u8>::with_capacity(data.written_size());
+        let mut encoded = Vec::<u8>::with_capacity(EXPECTED_SIZE);
         let mut writer = std::io::Cursor::new(&mut encoded);
         data.write(&mut writer).unwrap();
 
         let expected = hex!("0000000000000001000000000000000200000000000000080000000000000010000000000000002000000000000000400000000000000045");
         assert_eq!(encoded, expected);
-        assert_eq!(data.to_vec(), expected.to_vec());
     }
 
     #[test]
@@ -530,13 +443,12 @@ pub mod test {
         let data = b"All your base are belong to us.";
         let bytes = WriteableBytes::<u8>::new(data.to_vec());
 
-        let mut encoded = Vec::<u8>::with_capacity(bytes.written_size());
+        let mut encoded = Vec::<u8>::with_capacity(1 + data.len());
         let mut writer = std::io::Cursor::new(&mut encoded);
         bytes.write(&mut writer).unwrap();
 
         let expected = hex!("1f416c6c20796f75722062617365206172652062656c6f6e6720746f2075732e");
         assert_eq!(encoded, expected);
-        assert_eq!(bytes.to_vec(), expected.to_vec());
     }
 
     #[test]
@@ -544,13 +456,12 @@ pub mod test {
         let data = b"All your base are belong to us.";
         let bytes = WriteableBytes::<u16>::new(data.to_vec());
 
-        let mut encoded = Vec::<u8>::with_capacity(bytes.written_size());
+        let mut encoded = Vec::<u8>::with_capacity(2 + data.len());
         let mut writer = std::io::Cursor::new(&mut encoded);
         bytes.write(&mut writer).unwrap();
 
         let expected = hex!("001f416c6c20796f75722062617365206172652062656c6f6e6720746f2075732e");
         assert_eq!(encoded, expected);
-        assert_eq!(bytes.to_vec(), expected.to_vec());
     }
 
     #[test]
@@ -558,14 +469,13 @@ pub mod test {
         let data = b"All your base are belong to us.";
         let bytes = WriteableBytes::<u32>::new(data.to_vec());
 
-        let mut encoded = Vec::<u8>::with_capacity(bytes.written_size());
+        let mut encoded = Vec::<u8>::with_capacity(4 + data.len());
         let mut writer = std::io::Cursor::new(&mut encoded);
         bytes.write(&mut writer).unwrap();
 
         let expected =
             hex!("0000001f416c6c20796f75722062617365206172652062656c6f6e6720746f2075732e");
         assert_eq!(encoded, expected);
-        assert_eq!(bytes.to_vec(), expected.to_vec());
     }
 
     #[test]
