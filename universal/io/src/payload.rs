@@ -5,34 +5,34 @@ use crate::{Readable, Writeable};
 /// Trait to capture common payload behavior. We do not recommend overwriting
 /// any trait methods. Simply set the type constant and implement [`Readable`]
 /// and [`Writeable`].
-pub trait TypePrefixedPayload: Readable + Writeable + Clone + std::fmt::Debug {
-    const TYPE: Option<u8>;
+pub trait TypePrefixedPayload<const N: usize>:
+    Readable + Writeable + Clone + std::fmt::Debug
+{
+    const TYPE: Option<[u8; N]>;
 
-    /// Read the payload, including the type prefix.
-    fn read_typed<R: io::Read>(reader: &mut R) -> Result<Self, io::Error> {
-        let payload_type = u8::read(reader)?;
-        if payload_type == Self::TYPE.expect("Called write_typed on untyped payload") {
-            Self::read(reader)
-        } else {
-            Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "Invalid payload type",
-            ))
+    fn written_size(&self) -> usize;
+
+    /// Returns the size of the payload, including the type prefix.
+    fn payload_written_size(&self) -> usize {
+        match Self::TYPE {
+            Some(_) => self.written_size() + N,
+            None => self.written_size(),
         }
-    }
-
-    /// Write the payload, including the type prefix.
-    fn write_typed<W: io::Write>(&self, writer: &mut W) -> Result<(), io::Error> {
-        Self::TYPE
-            .expect("Called write_typed on untyped payload")
-            .write(writer)?;
-        Writeable::write(self, writer)
     }
 
     /// Read the payload, including the type prefix if applicable.
     fn read_payload<R: io::Read>(reader: &mut R) -> Result<Self, io::Error> {
         match Self::TYPE {
-            Some(_) => Self::read_typed(reader),
+            Some(id) => {
+                if id != <[u8; N]>::read(reader)? {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Invalid payload type",
+                    ));
+                }
+
+                Readable::read(reader)
+            }
             None => Readable::read(reader),
         }
     }
@@ -59,20 +59,15 @@ pub trait TypePrefixedPayload: Readable + Writeable + Clone + std::fmt::Debug {
     /// Write the payload, including the type prefix if applicable.
     fn write_payload<W: io::Write>(&self, writer: &mut W) -> Result<(), io::Error> {
         match Self::TYPE {
-            Some(_) => self.write_typed(writer),
+            Some(id) => {
+                id.write(writer)?;
+                Writeable::write(self, writer)
+            }
             None => Writeable::write(self, writer),
         }
     }
 
-    /// Returns the size of the payload, including the type prefix.
-    fn payload_written_size(&self) -> usize {
-        match Self::TYPE {
-            Some(_) => self.written_size() + 1,
-            None => self.written_size(),
-        }
-    }
-
-    fn to_vec_payload(&self) -> Vec<u8> {
+    fn to_vec(&self) -> Vec<u8> {
         let mut buf = Vec::with_capacity(self.payload_written_size());
         self.write_payload(&mut buf).expect("no alloc failure");
         buf
@@ -91,18 +86,20 @@ mod test {
     pub struct Message {
         pub a: u32,
         pub b: NineteenBytes,
-        pub c: WriteableBytes,
+        pub c: WriteableBytes<u32>,
         pub d: [u64; 4],
         pub e: bool,
     }
 
-    impl TypePrefixedPayload for Message {
-        const TYPE: Option<u8> = Some(69);
+    impl TypePrefixedPayload<1> for Message {
+        const TYPE: Option<[u8; 1]> = Some([69]);
+
+        fn written_size(&self) -> usize {
+            88
+        }
     }
 
     impl Readable for Message {
-        const SIZE: Option<usize> = Some(88);
-
         fn read<R>(reader: &mut R) -> std::io::Result<Self>
         where
             Self: Sized,
@@ -119,10 +116,6 @@ mod test {
     }
 
     impl Writeable for Message {
-        fn written_size(&self) -> usize {
-            <Message as Readable>::SIZE.unwrap()
-        }
-
         fn write<W>(&self, writer: &mut W) -> std::io::Result<()>
         where
             W: std::io::Write,
@@ -141,18 +134,18 @@ mod test {
         let msg = Message {
             a: 420,
             b: NineteenBytes(hex!("ba5edba5edba5edba5edba5edba5edba5edba5")),
-            c: b"Somebody set us up the bomb.".to_vec().into(),
+            c: b"Somebody set us up the bomb.".to_vec().try_into().unwrap(),
             d: [0x45; 4],
             e: true,
         };
 
-        let mut encoded = msg.to_vec_payload();
+        let mut encoded = msg.to_vec();
         assert_eq!(encoded, hex!("45000001a4ba5edba5edba5edba5edba5edba5edba5edba50000001c536f6d65626f6479207365742075732075702074686520626f6d622e000000000000004500000000000000450000000000000045000000000000004501"));
-        assert_eq!(encoded.capacity(), msg.payload_written_size());
+        assert_eq!(encoded.capacity(), 1 + msg.written_size());
         assert_eq!(encoded.capacity(), encoded.len());
 
         let mut cursor = std::io::Cursor::new(&mut encoded);
-        let decoded = Message::read_typed(&mut cursor).unwrap();
+        let decoded = Message::read_payload(&mut cursor).unwrap();
         assert_eq!(msg, decoded);
     }
 
@@ -173,7 +166,7 @@ mod test {
         let expected = Message {
             a: 420,
             b: NineteenBytes(hex!("ba5edba5edba5edba5edba5edba5edba5edba5")),
-            c: b"Somebody set us up the bomb.".to_vec().into(),
+            c: b"Somebody set us up the bomb.".to_vec().try_into().unwrap(),
             d: [0x45; 4],
             e: true,
         };
