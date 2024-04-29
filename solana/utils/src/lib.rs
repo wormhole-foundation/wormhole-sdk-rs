@@ -1,6 +1,9 @@
 pub mod account_info;
 
 #[cfg(feature = "anchor")]
+pub mod accounts;
+
+#[cfg(feature = "anchor")]
 pub mod cpi;
 
 #[cfg(feature = "anchor")]
