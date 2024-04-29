@@ -187,6 +187,10 @@ where
             )),
         }
     }
+
+    pub fn written_size(&self) -> usize {
+        std::mem::size_of::<L>() + self.inner.len()
+    }
 }
 
 impl<L> TryFrom<Vec<u8>> for WriteableBytes<L>
