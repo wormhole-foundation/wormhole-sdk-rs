@@ -1,21 +1,21 @@
 [workspace]
 members = [
-    "universal/io",
-    "universal/raw-vaas",
-    "solana/vaas",
     "solana/consts",
-    "solana/utils"
+    "solana/utils",
+    "solana/vaas",
+    "universal/io",
+    "universal/raw-vaas"
 ]
 resolver = "2"
 
 [workspace.package]
-version = "0.3.0-alpha.0"
+version = "0.0.0"
 edition = "2021"
 authors = ["Wormhole Contributors"]
 license = "Apache-2.0"
 homepage = "https://github.com/wormhole-foundation/wormhole-sdk-rs"
 repository = "https://github.com/wormhole-foundation/wormhole-sdk-rs"
-rust-version = "1.68"
+rust-version = "1.75"
 
 [workspace.metadata.docs.rs]
 all-features = true
@@ -23,16 +23,16 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [workspace.dependencies]
 hex-literal = "0.4.1"
-cfg-if = "1.0.0"
+cfg-if = "1.0"
 
 ### Solana related
-solana-program = "1.17.20"
+solana-program = "1.18.10"
 borsh = "0.10.3"
 anchor-lang = ">=0.29.0"
 
 serde = "1.0"
 serde_json = "1.0"
 
-wormhole-io = { path = "universal/io", version = "0.3.0-alpha.0" }
-wormhole-raw-vaas = { path = "universal/raw-vaas", version = "0.3.0-alpha.0" }
-wormhole-solana-consts = { path = "solana/consts", version = "0.3.0-alpha.0" }
+wormhole-io = { path = "universal/io", version = "0.0.0" }
+wormhole-raw-vaas = { path = "universal/raw-vaas", version = "0.0.0" }
+wormhole-solana-consts = { path = "solana/consts", version = "0.0.0" }
