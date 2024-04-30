@@ -24,6 +24,8 @@ rustdoc-args = ["--cfg", "docsrs"]
 [workspace.dependencies]
 hex-literal = "0.4.1"
 cfg-if = "1.0"
+ruint = { version = "1.9.0", default-features = false }
+ruint-macro = "1.1.0"
 
 ### Solana related
 solana-program = "1.18.10"
