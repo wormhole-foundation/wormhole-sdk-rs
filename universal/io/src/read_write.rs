@@ -154,6 +154,40 @@ impl_for_int_array!(i32);
 impl_for_int_array!(i64);
 impl_for_int_array!(i128);
 
+impl<T> Readable for Option<T>
+where
+    T: Readable,
+{
+    fn read<R>(reader: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+        R: io::Read,
+    {
+        match bool::read(reader)? {
+            true => Ok(Some(T::read(reader)?)),
+            false => Ok(None),
+        }
+    }
+}
+
+impl<T> Writeable for Option<T>
+where
+    T: Writeable,
+{
+    fn write<W>(&self, writer: &mut W) -> io::Result<()>
+    where
+        W: io::Write,
+    {
+        match self {
+            Some(value) => {
+                true.write(writer)?;
+                value.write(writer)
+            }
+            None => false.write(writer),
+        }
+    }
+}
+
 /// Wrapper for `Vec<u8>`. Encoding is similar to Borsh, where the length is encoded as u32 (but in
 /// this case, it's big endian).
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -186,6 +220,10 @@ where
                 "L overflow when converting from usize",
             )),
         }
+    }
+
+    pub fn written_size(&self) -> usize {
+        std::mem::size_of::<L>() + self.inner.len()
     }
 }
 
@@ -485,5 +523,29 @@ pub mod test {
 
         let taken = std::mem::take(&mut bytes);
         assert_eq!(taken.as_slice(), data);
+    }
+
+    #[test]
+    fn option_some() {
+        let value = Some(69u64);
+
+        let mut encoded = Vec::<u8>::with_capacity(1 + 8);
+        let mut writer = std::io::Cursor::new(&mut encoded);
+        value.write(&mut writer).unwrap();
+
+        let expected = hex!("010000000000000045");
+        assert_eq!(encoded, expected);
+    }
+
+    #[test]
+    fn option_none() {
+        let value: Option<[u8; 64]> = None;
+
+        let mut encoded = Vec::<u8>::with_capacity(1);
+        let mut writer = std::io::Cursor::new(&mut encoded);
+        value.write(&mut writer).unwrap();
+
+        let expected = hex!("00");
+        assert_eq!(encoded, expected);
     }
 }
