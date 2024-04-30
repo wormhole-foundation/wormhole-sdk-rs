@@ -10,14 +10,23 @@ env:
 
 jobs:
     test:
-        name: test ${{ matrix.rust }} ${{ matrix.flags }}
+        name: test ${{ matrix.rust }} ${{ matrix.flags }} ${{ matrix.extra-flags }}
         runs-on: ubuntu-latest
         timeout-minutes: 30
         strategy:
             fail-fast: false
             matrix:
-                rust: ["stable", "beta", "nightly", "1.68"] # MSRV
-                flags: ["--no-default-features --features=off-chain", "--no-default-features --features=ruint", ""]
+                rust: ["stable", "beta", "nightly", "1.75"] # MSRV
+                flags: [
+                    "--features mainnet",
+                    "--features testnet",
+                    "--features localnet"
+                ]
+                extra-flags: [
+                    "--features ruint",
+                    "--features anchor",
+                    "--features ruint,anchor"
+                ]
         steps:
             - uses: actions/checkout@v3
             - uses: dtolnay/rust-toolchain@master
@@ -25,16 +34,24 @@ jobs:
                   toolchain: ${{ matrix.rust }}
             - uses: Swatinem/rust-cache@v2
             - name: test
-              run: cd universal && cargo test --workspace ${{ matrix.flags }}
+              run: cd universal && cargo test --workspace ${{ matrix.flags }} ${{ matrix.extra-flags }}
 
     clippy:
-        name: clippy
+        name: clippy ${{ matrix.flags }}
         runs-on: ubuntu-latest
         timeout-minutes: 30
+        strategy:
+            fail-fast: false
+            matrix:
+                flags: [
+                    "--features mainnet",
+                    "--features testnet",
+                    "--features localnet"
+                ]
         steps:
             - uses: actions/checkout@v3
             - uses: dtolnay/rust-toolchain@clippy
-            - run: cd universal && cargo clippy --workspace --all-targets
+            - run: cd universal && cargo clippy --workspace --all-targets ${{ matrix.flags }}
               env:
                   RUSTFLAGS: -Dwarnings
 
